@@ -25,6 +25,7 @@
 			var line = createRoadLine("yellow");
 			var symbol = new Symbol(line);
 			var minVelocity = new Point(0,-10);
+			var camera = new Camera();
 			
 			for(var x = 0; x < numberOfLanes; x++) {
 				for(var y = 0; y < numberOfLinesPerLane; y++) {
@@ -55,19 +56,49 @@
 				player1.moveForward(delta);
 				player2.moveForward(delta);
 				
-				var avg = (player1.path.position/2 + player2.path.position/2);
-				avg.y -= view.bounds.height / 4;
-				var viewBottomPadding = new Rectangle(view.bounds.x, view.bounds.y, view.bounds.width, view.bounds.height -100);
-				if (!(view.bounds.contains(player1.path.bounds) && view.bounds.contains(player2.path.bounds))) {
-					view.zoom -= .01;
-				} else if (viewBottomPadding.contains(player1.path.bounds) && viewBottomPadding.contains(player2.path.bounds)) {
-					view.zoom += .01;
-				}
-				
-				view.center = avg;
+				camera.repositionCamera();
 			}
 			
 			var numberOfPlayers = 2;
+			
+			function Camera() {
+				this.zoomBlocked = false;
+				this.bottomPadding = 100;
+			
+			    this.repositionCamera = function() {
+					var avg = (player1.path.position/2 + player2.path.position/2);
+					avg.y -= view.bounds.height / 4;
+					var viewBottomPadding = new Rectangle(view.bounds.x, view.bounds.y, view.bounds.width, view.bounds.height - this.bottomPadding);
+					if (!(view.bounds.contains(player1.path.bounds) && view.bounds.contains(player2.path.bounds))) {
+						zoomIn();
+					} else if (viewBottomPadding.contains(player1.path.bounds) && viewBottomPadding.contains(player2.path.bounds)) {
+						zoomOut();
+					}
+					
+					view.center = avg;
+				}
+				
+				function blockZoomIn() {
+					this.zoomBlocked = true;
+					setTimeout(function() {this.zoomBlocked = false;}, 700);
+				}
+				
+				function zoomIn() {
+					view.zoom -= .01;
+					blockZoomIn();
+				}
+				
+				function zoomOut() {
+					if (!this.zoomBlocked) {
+						view.zoom += .01;
+					}
+				}
+				return this;
+			}
+			
+			
+
+			
 			function Player(x, y, color, initialVelocity) {
 				var self = this;
 				var racecar = new Rectangle(x, y, 100, 100);
