@@ -8,10 +8,38 @@
         <!-- Define inlined PaperScript associate it with myCanvas -->
         <script type="text/paperscript" canvas="myCanvas">
 			
+			////////// START TRACK GENERATION //////////
+
+			var myTrackConfig = {
+					"NumberOfLanes" : 5,
+					"NumberOfSegments" : 100,
+					"NumberOfInitialOpenSegments" : 5,
+					"ObstacleFrequency" : 0.1
+				},
+				myTrack = new Track(myTrackConfig),
+				mySegments = myTrack.getSegments();
+			
+            ////////// END TRACK GENERATION //////////
+			
+			
 			////////// START TRACK VIEW //////////
 			
-			// generate obstacles
-            function generateObstacles(data) {
+			// generate OBSTACLES
+			var baseObstacle = new Path.Circle({
+					center: [0, 0],
+					radius: 25,
+					fillColor: "black",
+					strockColor: "yellow"
+				}),
+				obstacleSymbol = new Symbol(baseObstacle),
+				obstacleLayer;
+            
+            function createObstacle(x, y) {
+                var point = new Point(x + 50, -y),
+					placedObstacle = obstacleSymbol.place(point);
+            }
+			
+			function generateObstacles(data) {
                 var rowHeight = 100,
                     columnWidth = 100,
                     row;
@@ -29,34 +57,32 @@
                 }
             }
 			
-			var baseObstacle = new Path.Circle({
-					center: [0, 0],
-					radius: 25,
-					fillColor: "black",
-					strockColor: "yellow"
-				}),
-				obstacleSymbol = new Symbol(baseObstacle),
-				obstacleLayer;
-            
-            function createObstacle(x, y) {
-                var point = new Point(x + 50, -y),
-					placedObstacle = obstacleSymbol.place(point);
-            }
+			generateObstacles(mySegments);
 			
-			// generate road lines
+			// generate ROAD LINES
 			var numberOfRoadRasters = 10,
 				roadRasterHeight = 100,
+				// calculate combined height to reposition line during onFrame callback
 				combinedRoadLineHeight = numberOfRoadRasters * roadRasterHeight * 2,
-				baseRoadLinePosition = new Point(100, view.bounds.height - roadRasterHeight / 2), 
-				baseRoadLine = new Raster("roadLine", baseRoadLinePosition),
-				roadLineSymbol = new Symbol(baseRoadLine),
-				placedRoadLines = [];
+				// first road line is at bottom of view
+				roadLinePosition = new Point(0, view.bounds.height - roadRasterHeight / 2),
+				baseRoadLine = new Raster("roadLine", roadLinePosition),
+				roadLineSymbol = new Symbol(baseRoadLine);
+			
+			function checkRoadLine(item) {
+				if (view.bounds.y + view.bounds.height < item.bounds.y) {
+					item.position.y -= combinedRoadLineHeight;
+				}
+			}
 			
 			function createRoadLine(i) {
-				var point = baseRoadLinePosition;
+				var point = roadLinePosition;
+				// subsequent lines are positioned above the previous line
 				point.y -= roadRasterHeight * 2;
 				var placedRoadLine = roadLineSymbol.place(point);
-				placedRoadLines.push(placedRoadLine);
+				placedRoadLine.onFrame = function(e) {
+					checkRoadLine(this);
+				}
 			}
 			
 			function generateRoadLines() {
@@ -64,44 +90,9 @@
 					createRoadLine(i);
 				}
 			}
+			
 			generateRoadLines();
-			//console.log(placedRoadLines);
-			function checkRoadLines() {
-				//console.log('check road lines');
-				//console.log(roadLineSymbol.instances);
-				for (var i = 0; i < placedRoadLines.length; i++) {
-					var item = placedRoadLines[i];
-					//console.log(item);
-					//console.log('y: ' + item.position.y);
-					
-					//console.log('bounds y: ' + view.bounds.y);
-					//console.log('bounds height; ' + view.bounds.height);
-					if (view.bounds.y + view.bounds.height < item.bounds.y) {
-						//console.log(item.position.y);
-						//console.log('true');
-						item.position.y -= combinedRoadLineHeight;
-					}
-				}
-			}
 			////////// END TRACK VIEW //////////
-            
-            
-            
-            ////////// START TRACK GENERATION //////////
-
-            var myTrackConfig = {
-                "NumberOfLanes" : 10,
-                "NumberOfSegments" : 100,
-                "NumberOfInitialOpenSegments" : 5,
-                "ObstacleFrequency" : 0.1
-            }
-
-            var myTrack = new Track(myTrackConfig);
-            var mySegments = myTrack.getSegments();
-
-            generateObstacles(mySegments);
-
-            ////////// END TRACK GENERATION //////////
 			
             var time1;
             
@@ -135,8 +126,6 @@
                 }*/
                 var point = new Point(0, -5);
                 view.scrollBy(point);
-				
-				checkRoadLines();
             }
             
             function onKeyDown(e) {
@@ -196,4 +185,4 @@
         <div id="canvasWrapper"><canvas id="myCanvas" width="500" height="600"></canvas></div>
 		<img src="images/road_line2.gif" id="roadLine" />
     </body>
-</html
+</html>
