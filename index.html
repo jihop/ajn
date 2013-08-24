@@ -69,10 +69,11 @@
 					var avg = (player1.path.position/2 + player2.path.position/2);
 					avg.y -= view.bounds.height / 4;
 					var viewBottomPadding = new Rectangle(view.bounds.x, view.bounds.y, view.bounds.width, view.bounds.height - this.bottomPadding);
-					if (!(view.bounds.contains(player1.path.bounds) && view.bounds.contains(player2.path.bounds))) {
-						zoomIn();
-					} else if (viewBottomPadding.contains(player1.path.bounds) && viewBottomPadding.contains(player2.path.bounds)) {
+					while(!(view.bounds.contains(player1.path.bounds) && view.bounds.contains(player2.path.bounds))) {
 						zoomOut();
+					} 
+					if (viewBottomPadding.contains(player1.path.bounds) && viewBottomPadding.contains(player2.path.bounds)) {
+						zoomIn();
 					}
 					
 					view.center = avg;
@@ -83,12 +84,12 @@
 					setTimeout(function() {this.zoomBlocked = false;}, 700);
 				}
 				
-				function zoomIn() {
+				function zoomOut() {
 					view.zoom -= .01;
 					blockZoomIn();
 				}
 				
-				function zoomOut() {
+				function zoomIn() {
 					if (!this.zoomBlocked) {
 						view.zoom += .01;
 					}
