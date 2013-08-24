@@ -7,24 +7,11 @@
 
         <!-- Define inlined PaperScript associate it with myCanvas -->
         <script type="text/paperscript" canvas="myCanvas">
-            function shuffle(array) {
-                var tmp, current, top = array.length;
-
-                if(top) while(--top) {
-                    current = Math.floor(Math.random() * (top + 1));
-                    tmp = array[current];
-                    array[current] = array[top];
-                    array[top] = tmp;
-                }
-
-                return array;
-            }
-        
-            var row = [0, 0, 0, 0, 1];
-            var numberOfLanes = 5;
-            var numberOfLinesPerLane = 50;
-            
-            function generateTrackView(data) {
+			
+			////////// START TRACK VIEW //////////
+			
+			// generate obstacles
+            function generateObstacles(data) {
                 var rowHeight = 100,
                     columnWidth = 100,
                     row;
@@ -35,25 +22,70 @@
                             case 0: // No Obstacle
                                 break;
                             default: // Obstacle
-                                createObsticle(x * columnWidth, y * rowHeight);
+                                createObstacle(x * columnWidth, y * rowHeight);
                                 break;
                         }
                     }
                 }
             }
+			
+			var baseObstacle = new Path.Circle({
+					center: [0, 0],
+					radius: 25,
+					fillColor: "black",
+					strockColor: "yellow"
+				}),
+				obstacleSymbol = new Symbol(baseObstacle),
+				obstacleLayer;
             
-            var obsticle = new Path.Circle({
-                center: [0, 0],
-                radius: 25,
-                fillColor: "black",
-                strockColor: "yellow"
-            });
-            var obsticleSymbol = new Symbol(obsticle);
-            
-            function createObsticle(x, y) {
-                var point = new Point(x + 50, -y);
-                var placedObsticle = obsticleSymbol.place(point);
+            function createObstacle(x, y) {
+                var point = new Point(x + 50, -y),
+					placedObstacle = obstacleSymbol.place(point);
             }
+			
+			// generate road lines
+			var numberOfRoadRasters = 10,
+				roadRasterHeight = 100,
+				combinedRoadLineHeight = numberOfRoadRasters * roadRasterHeight * 2,
+				baseRoadLinePosition = new Point(100, view.bounds.height - roadRasterHeight / 2), 
+				baseRoadLine = new Raster("roadLine", baseRoadLinePosition),
+				roadLineSymbol = new Symbol(baseRoadLine),
+				placedRoadLines = [];
+			
+			function createRoadLine(i) {
+				var point = baseRoadLinePosition;
+				point.y -= roadRasterHeight * 2;
+				var placedRoadLine = roadLineSymbol.place(point);
+				placedRoadLines.push(placedRoadLine);
+			}
+			
+			function generateRoadLines() {
+				for (var i = 0; i < numberOfRoadRasters; i++) {
+					createRoadLine(i);
+				}
+			}
+			generateRoadLines();
+			//console.log(placedRoadLines);
+			function checkRoadLines() {
+				//console.log('check road lines');
+				//console.log(roadLineSymbol.instances);
+				for (var i = 0; i < placedRoadLines.length; i++) {
+					var item = placedRoadLines[i];
+					//console.log(item);
+					//console.log('y: ' + item.position.y);
+					
+					//console.log('bounds y: ' + view.bounds.y);
+					//console.log('bounds height; ' + view.bounds.height);
+					if (view.bounds.y + view.bounds.height < item.bounds.y) {
+						//console.log(item.position.y);
+						//console.log('true');
+						item.position.y -= combinedRoadLineHeight;
+					}
+				}
+			}
+			////////// END TRACK VIEW //////////
+            
+            
             
             ////////// START TRACK GENERATION //////////
 
@@ -67,38 +99,10 @@
             var myTrack = new Track(myTrackConfig);
             var mySegments = myTrack.getSegments();
 
-            generateTrackView(mySegments);
+            generateObstacles(mySegments);
 
             ////////// END TRACK GENERATION //////////
-            
-            
-            function createRoadLine(color) {
-                // Create a Paper.js Path to draw a line into it:
-                var path = new Path();
-                // Give the stroke a color
-                path.strokeColor = color;
-                var start = new Point(100, 100);
-                // Move to start and draw a line from there
-                path.moveTo(start);
-                // Note the plus operator on Point objects.
-                // PaperScript does that for us, and much more!
-                path.lineTo(start + [ 0, -50 ]);
-                return path;
-            }
-            
-            
-            var line = createRoadLine("yellow");
-            var symbol = new Symbol(line);
-            
-            for(var x = 0; x < numberOfLanes; x++) {
-                for(var y = 0; y < numberOfLinesPerLane; y++) {
-                    //console.log('place a new line: ' + x * 100 + " " + y * -50);
-                    var position = new Point(x * 100, -(y * 50 + y * 100));
-                    //console.log(position);
-                    var placedLine = symbol.place(position);
-                }
-            }
-            
+			
             var time1;
             
             var numberOfPlayers = 2;
@@ -129,8 +133,10 @@
                     
                     item.position.y += item.bounds.height / 2;
                 }*/
-                var point = new Point(0, -10);
+                var point = new Point(0, -5);
                 view.scrollBy(point);
+				
+				checkRoadLines();
             }
             
             function onKeyDown(e) {
@@ -159,14 +165,11 @@
                         break;
                     case "down":
                         // zoom in
-                        //view.zoom += .1;
+                        view.zoom += .1;
                         break;
                     case "up":
                         //  zoom out
-                        //view.zoom -= .1;
-                        console.log('move center');
-                        var point = new Point(0, -100);
-                        view.scrollBy(point);
+                        view.zoom -= .1;
                         return false;
                         break;
                 }
@@ -178,14 +181,19 @@
                 margin: 0;
                 padding: 0;
             }
+			#canvasWrapper {
+				margin: 0 auto;
+				width: 502px;
+			}
             #myCanvas {
-                background: grey;
-                margin: 20px;
+				border: 1px solid black;
+				background: grey;
             }
         </style>
     </head>
     <body>
         <p>fps: <span id="fps"></span></p>
-        <canvas id="myCanvas" width="500" height="600"></canvas>
+        <div id="canvasWrapper"><canvas id="myCanvas" width="500" height="600"></canvas></div>
+		<img src="images/road_line2.gif" id="roadLine" />
     </body>
 </html
