@@ -24,6 +24,7 @@
 			var numberOfLinesPerLane = 50;
 			var line = createRoadLine("yellow");
 			var symbol = new Symbol(line);
+			var minVelocity = new Point(0,-10);
 			
 			for(var x = 0; x < numberOfLanes; x++) {
 				for(var y = 0; y < numberOfLinesPerLane; y++) {
@@ -47,24 +48,50 @@
 				//console.log('delta: ' + delta);
 				document.getElementById("fps").innerHTML = Math.ceil(1/(delta/1000));
 				//console.log('on frame');
-				for (var i = 0; i < numberOfLanes * numberOfLinesPerLane; i++) {
-					var item = project.activeLayer.children[i];
-					
-					item.position.y += item.bounds.height / 2;
+				
+				// Animate players
+				
+				
+				player1.moveForward(delta);
+				player2.moveForward(delta);
+				
+				var avg = (player1.path.position/2 + player2.path.position/2);
+				
+				if (!(view.bounds.contains(player1.path.bounds) && view.bounds.contains(player1.path.bounds))) {
+					view.zoom -= .01;
 				}
+				
+				view.center = avg;
 			}
 			
 			var numberOfPlayers = 2;
-			function createPlayerCar(x, y, color) {
+			function Player(x, y, color, initialVelocity) {
+				var self = this;
 				var racecar = new Rectangle(x, y, 100, 100);
+				
 				var path = new Path.Rectangle(racecar);
 				
 				path.fillColor = color;
-				
-				return path;
+
+				self.shape = racecar;
+				self.velocity = initialVelocity;
+				self.path = path;
+				self.moveForward = function(tickDuration) {
+					if(!tickDuration) {
+						var tickDuration = 30;
+					}
+					self.path.position += self.velocity; //* tickDuration / 50;
+				}
+				self.collideWith = function(obstacle) {
+					var collisionVelocity = new Point(0,5);
+					self.velocity += collisionVelocity;
+					setTimeout(function() { self.velocity -= collisionVelocity },500);
+					
+				}
+				return this;
 			}
-			var player1 = createPlayerCar(100, 500, "green");
-			var player2 = createPlayerCar(200, 500, "blue");
+			var player1 = new Player(100, 500, "green", new Point(0,-15));
+			var player2 = new Player(200, 500, "blue", new Point(0,-15));
 			//console.log(player1.position);
 			
 			function onKeyDown(e) {
@@ -72,26 +99,30 @@
 				switch(e.key) {
 					case "left":
 						// player2 goes left;
-						var xPos = player2.position.getX() - 100;
+						var xPos = player2.path.position.getX() - 100;
 						//console.log(xPos);
-						player2.position.setX(xPos);
+						player2.path.position.setX(xPos);
 						break;
 					case "right":
 						// player2 goes right;
-						var xPos = player2.position.getX() + 100;
-						player2.position.setX(xPos);
+						var xPos = player2.path.position.getX() + 100;
+						player2.path.position.setX(xPos);
 						break;
 					case "a":
 						// player1 goes left;
-						var xPos = player1.position.getX() - 100;
-						player1.position.setX(xPos);
+						var xPos = player1.path.position.getX() - 100;
+						player1.path.position.setX(xPos);
 						break;
 					case "d":
 						// player1 goes right;
-						var xPos = player1.position.getX() + 100;
-						player1.position.setX(xPos);
+						var xPos = player1.path.position.getX() + 100;
+						player1.path.position.setX(xPos);
+						break;
+					case 'g':
+						player1.collideWith();
 						break;
 				}
+				
 			}
 		</script>
 		<style>
