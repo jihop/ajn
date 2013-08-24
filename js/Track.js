@@ -2,45 +2,45 @@ function Track (trackConfig) {
 
     var self = this;
     var trackConfig = trackConfig;
-    var sections = (function() {
+    var segments = (function() {
 
-        var returnSections = new Array();
+        var returnSegments = new Array();
 
-        // Initial Open Sections
-        for (var i=0; i<trackConfig["NumberOfInitialOpenSections"]; i++) {
+        // Initial Open Segments
+        for (var i=0; i<trackConfig["NumberOfInitialOpenSegments"]; i++) {
 
-            var tmpSection = generateRandomSection(trackConfig["NumberOfLanes"], 0.0);
-            returnSections.push(tmpSection);
+            var tmpSegment = generateRandomSegment(trackConfig["NumberOfLanes"], 0.0);
+            returnSegments.push(tmpSegment);
         }
 
-        // Randomly Generated Sections
-        for (var i=trackConfig["NumberOfInitialOpenSections"]; i<trackConfig["NumberOfSections"]; i++) {
+        // Randomly Generated Segments
+        for (var i=trackConfig["NumberOfInitialOpenSegments"]; i<trackConfig["NumberOfSegments"]; i++) {
 
-            var tmpSection = generateRandomSection(trackConfig["NumberOfLanes"], trackConfig["ObstacleFrequency"]);
-            returnSections.push(tmpSection);
+            var tmpSegment = generateRandomSegment(trackConfig["NumberOfLanes"], trackConfig["ObstacleFrequency"]);
+            returnSegments.push(tmpSegment);
         }
 
-        return returnSections;
+        return returnSegments;
 
     })();
 
-    function generateRandomSection (numberOfLanes, obstacleFrequency) {
+    function generateRandomSegment (numberOfLanes, obstacleFrequency) {
 
-        var tmpSection = new Array();
+        var tmpSegment = new Array();
         for (var i=0; i<numberOfLanes; i++) {
 
             if (Math.random() < obstacleFrequency) {
-                tmpSection.push(100);
+                tmpSegment.push(100);
             } else {
-                tmpSection.push(0);
+                tmpSegment.push(0);
             }
         }
 
-        return tmpSection;
+        return tmpSegment;
     }
 
-    self.getSections = function () {
-        return sections;
+    self.getSegments = function () {
+        return segments;
     }
 }
 

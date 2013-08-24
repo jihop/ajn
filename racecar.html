@@ -59,16 +59,15 @@
 
             var myTrackConfig = {
                 "NumberOfLanes" : 10,
-                "NumberOfSections" : 100,
-                "NumberOfInitialOpenSections" : 5,
-                "ObstacleFrequency" : 0.4
+                "NumberOfSegments" : 100,
+                "NumberOfInitialOpenSegments" : 5,
+                "ObstacleFrequency" : 0.1
             }
 
             var myTrack = new Track(myTrackConfig);
-            var mySections = myTrack.getSections();
-            console.log(mySections);
+            var mySegments = myTrack.getSegments();
 
-            generateTrackView(mySections);
+            generateTrackView(mySegments);
 
             ////////// END TRACK GENERATION //////////
             
