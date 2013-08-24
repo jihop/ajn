@@ -1,0 +1,87 @@
+<html>
+<head>
+
+<style>
+span {font-family:"Courier New";}
+</style>
+
+</head>
+<body>
+
+<span id="viewport"></span>
+
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script type="text/javascript" src="src/Track.js"></script>
+<script>
+
+
+function Obstacle () {
+
+}
+
+function Car () {
+
+}
+
+$(document).ready(function() {
+
+    var track = new Track(5);
+    var tick = 0;
+
+    var moveRight = 0;
+    var moveLeft = 0;
+
+    intervalId = setInterval(function() {
+
+        if (moveRight == 1) {
+            moveRight = 0;
+            track.updateRacecarPosition(1);
+        } else if (moveLeft == 1) {
+            moveLeft = 0;
+            track.updateRacecarPosition(-1);
+        }
+
+        var currentTrackSegment = track.getTrackSegment(tick, tick + 40);
+        var currentRacecarPosition = track.getRacecarPosition();
+
+        var indicator = "----------";
+        var newIndicator = [indicator.slice(0, currentRacecarPosition), "X", indicator.slice(currentRacecarPosition)].join('');
+        var extra = "<span>" + newIndicator + "</span><br/>";
+
+
+        var carPosition = extra.indexOf("X");
+        var trackElementAtCarPosition = currentTrackSegment[0].charAt(carPosition);
+
+        if (trackElementAtCarPosition == "o") {
+            console.log("COLLISSION!");
+            extra = "GAME OVER MAN";
+            clearInterval(intervalId);
+        } else {
+        }
+
+        currentTrackSegment[0].substr(0, carPosition) + "X" + currentTrackSegment[0].substr(carPosition + "X".length);
+        currentTrackSegment.unshift(extra);
+
+        $('#viewport').html();
+        $('#viewport').html(currentTrackSegment.reverse());
+
+        tick++;
+
+    }, 50);
+
+    window.addEventListener('keydown', function(event) {
+        switch (event.keyCode) {
+            case 37: // Left
+                moveLeft = 1;
+                break;
+            case 39: // Right
+                moveRight = 1;
+                break;
+        }
+    }, false);
+
+});
+
+</script>
+</body>
+</html>
