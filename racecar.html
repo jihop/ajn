@@ -22,17 +22,15 @@
             ////////// END TRACK GENERATION //////////
 			
 			
-			////////// START TRACK VIEW //////////
+			////////// START OBSTACLES //////////
 			
-			// generate OBSTACLES
 			var baseObstacle = new Path.Circle({
 					center: [0, 0],
 					radius: 25,
 					fillColor: "black",
 					strockColor: "yellow"
 				}),
-				obstacleSymbol = new Symbol(baseObstacle),
-				obstacleLayer;
+				obstacleSymbol = new Symbol(baseObstacle);
             
             function createObstacle(x, y) {
                 var point = new Point(x + 50, -y),
@@ -59,7 +57,11 @@
 			
 			generateObstacles(mySegments);
 			
-			// generate ROAD LINES
+			////////// END OBSTACLES //////////
+			
+			
+			////////// START ROAD LINES //////////
+			
 			var numberOfRoadRasters = 10,
 				roadRasterHeight = 100,
 				// calculate combined height to reposition line during onFrame callback
@@ -92,22 +94,84 @@
 			}
 			
 			generateRoadLines();
-			////////// END TRACK VIEW //////////
+			
+			////////// END ROAD LINES //////////
+			
+			
+			////////// START CAMERA //////////
+			
+			function Camera() {
+				this.zoomBlocked = false;
+				this.bottomPadding = 100;
+			
+			    this.repositionCamera = function() {
+					var avg = (player1.path.position/2 + player2.path.position/2);
+					avg.y -= view.bounds.height / 4;
+					var viewBottomPadding = new Rectangle(view.bounds.x, view.bounds.y, view.bounds.width, view.bounds.height - this.bottomPadding);
+					while(!(view.bounds.contains(player1.path.bounds) && view.bounds.contains(player2.path.bounds))) {
+						zoomOut();
+					} 
+					if (viewBottomPadding.contains(player1.path.bounds) && viewBottomPadding.contains(player2.path.bounds)) {
+						zoomIn();
+					}
+					
+					view.center = avg;
+				}
+				
+				function blockZoomIn() {
+					this.zoomBlocked = true;
+					setTimeout(function() {this.zoomBlocked = false;}, 700);
+				}
+				
+				function zoomOut() {
+					view.zoom -= .01;
+					blockZoomIn();
+				}
+				
+				function zoomIn() {
+					if (!this.zoomBlocked) {
+						view.zoom += .01;
+					}
+				}
+				return this;
+			}
+			var camera = new Camera();
+			
+			////////// END CAMERA //////////
+
+			////////// START PLAYER //////////
+			
+			function Player(x, y, color, initialVelocity) {
+				var self = this;
+				var racecar = new Rectangle(x, y, 100, 100);
+				
+				var path = new Path.Rectangle(racecar);
+				
+				path.fillColor = color;
+
+				self.shape = racecar;
+				self.velocity = initialVelocity;
+				self.path = path;
+				self.moveForward = function(tickDuration) {
+					if(!tickDuration) {
+						var tickDuration = 30;
+					}
+					self.path.position += self.velocity; //* tickDuration / 50;
+				}
+				self.collideWith = function(obstacle) {
+					var collisionVelocity = new Point(0,5);
+					self.velocity += collisionVelocity;
+					setTimeout(function() { self.velocity -= collisionVelocity },500);
+					
+				}
+				return this;
+			}
+			var player1 = new Player(100, 500, "green", new Point(0,-15));
+			var player2 = new Player(200, 500, "blue", new Point(0,-15));
+			
+			////////// END CAMERA //////////
 			
             var time1;
-            
-            var numberOfPlayers = 2;
-            function createPlayerCar(x, y, color) {
-                var racecar = new Rectangle(x, y, 100, 100);
-                var path = new Path.Rectangle(racecar);
-                
-                path.fillColor = color;
-                
-                return path;
-            }
-            var player1 = createPlayerCar(100, 500, "green");
-            var player2 = createPlayerCar(200, 500, "blue");
-            
             function onFrame(event) {
                 if (!time1) {
                     time1 = new Date().getTime();
@@ -115,52 +179,42 @@
                 var time2 = new Date().getTime();
                 var delta = time2 - time1;
                 time1 = time2;
-                //console.log('delta: ' + delta);
                 document.getElementById("fps").innerHTML = Math.ceil(1/(delta/1000));
-                /*
-                //console.log('on frame');
-                for (var i = 0; i < numberOfLanes * numberOfLinesPerLane; i++) {
-                    var item = project.activeLayer.children[i];
-                    
-                    item.position.y += item.bounds.height / 2;
-                }*/
-                var point = new Point(0, -5);
-                view.scrollBy(point);
+                
+				player1.moveForward(delta);
+				player2.moveForward(delta);
+				
+				camera.repositionCamera();
             }
             
             function onKeyDown(e) {
-                //console.log('key down: ' + e.key);
                 switch(e.key) {
                     case "left":
-                        // player2 goes left;
-                        var xPos = player2.position.getX() - 100;
-                        //console.log(xPos);
-                        player2.position.setX(xPos);
-                        break;
-                    case "right":
-                        // player2 goes right;
-                        var xPos = player2.position.getX() + 100;
-                        player2.position.setX(xPos);
-                        break;
-                    case "a":
-                        // player1 goes left;
-                        var xPos = player1.position.getX() - 100;
-                        player1.position.setX(xPos);
-                        break;
-                    case "d":
-                        // player1 goes right;
-                        var xPos = player1.position.getX() + 100;
-                        player1.position.setX(xPos);
-                        break;
-                    case "down":
-                        // zoom in
-                        view.zoom += .1;
-                        break;
-                    case "up":
-                        //  zoom out
-                        view.zoom -= .1;
-                        return false;
-                        break;
+						// player2 goes left;
+						var xPos = player2.path.position.getX() - 100;
+						player2.path.position.setX(xPos);
+						break;
+					case "right":
+						// player2 goes right;
+						var xPos = player2.path.position.getX() + 100;
+						player2.path.position.setX(xPos);
+						break;
+					case "a":
+						// player1 goes left;
+						var xPos = player1.path.position.getX() - 100;
+						player1.path.position.setX(xPos);
+						break;
+					case "d":
+						// player1 goes right;
+						var xPos = player1.path.position.getX() + 100;
+						player1.path.position.setX(xPos);
+						break;
+					case 'g':
+						player1.collideWith();
+						break;
+					case 'h':
+						player2.collideWith();
+						break;
                 }
             }
         </script>
