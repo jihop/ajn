@@ -56,9 +56,12 @@
 				player2.moveForward(delta);
 				
 				var avg = (player1.path.position/2 + player2.path.position/2);
-				
-				if (!(view.bounds.contains(player1.path.bounds) && view.bounds.contains(player1.path.bounds))) {
+				avg.y -= view.bounds.height / 4;
+				var viewBottomPadding = new Rectangle(view.bounds.x, view.bounds.y, view.bounds.width, view.bounds.height -100);
+				if (!(view.bounds.contains(player1.path.bounds) && view.bounds.contains(player2.path.bounds))) {
 					view.zoom -= .01;
+				} else if (viewBottomPadding.contains(player1.path.bounds) && viewBottomPadding.contains(player2.path.bounds)) {
+					view.zoom += .01;
 				}
 				
 				view.center = avg;
@@ -120,6 +123,9 @@
 						break;
 					case 'g':
 						player1.collideWith();
+						break;
+					case 'h':
+						player2.collideWith();
 						break;
 				}
 				
