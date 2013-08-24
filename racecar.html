@@ -1,185 +1,192 @@
 <!doctype html>
 <html>
-	<head>
-		<!-- Load the Paper.js library -->
-		<script type="text/javascript" src="js/paper.js"></script>
-		<!-- Define inlined PaperScript associate it with myCanvas -->
-		<script type="text/paperscript" canvas="myCanvas">
-			function shuffle(array) {
-				var tmp, current, top = array.length;
+    <head>
+        <!-- Load the Paper.js library -->
+        <script type="text/javascript" src="js/paper.js"></script>
+        <script type="text/javascript" src="js/Track.js"></script>
 
-				if(top) while(--top) {
-					current = Math.floor(Math.random() * (top + 1));
-					tmp = array[current];
-					array[current] = array[top];
-					array[top] = tmp;
-				}
+        <!-- Define inlined PaperScript associate it with myCanvas -->
+        <script type="text/paperscript" canvas="myCanvas">
+            function shuffle(array) {
+                var tmp, current, top = array.length;
 
-				return array;
-			}
-		
-			var trackData = [];
-			var row = [0, 0, 0, 0, 1];
-			var numberOfLanes = 5;
-			var numberOfLinesPerLane = 50;
-			
-			for (var i = 0; i < 150; i++) {
-				var shuffledRow = shuffle(row);
-				trackData.push(shuffledRow.concat());
-			}
-			//console.log(trackData);
-			
-			function generateTrackView(data) {
-				var rowHeight = 100,
-					columnWidth = 100,
-					row;
-				for (var y = 0; y < data.length; y++) {
-					row = data[y];
-					for (var x = 0; x < row.length; x++) {
-						switch (row[x]) {
-							case 0:
-								// no obsticle
-								break;
-							case 1:
-								// create obsticle 1
-								createObsticle(x * columnWidth, y * rowHeight);
-								break;
-						}
-					}
-				}
-			}
-			
-			var obsticle = new Path.Circle({
-				center: [0, 0],
-				radius: 25,
-				fillColor: "black",
-				strockColor: "yellow"
-			});
-			var obsticleSymbol = new Symbol(obsticle);
-			
-			function createObsticle(x, y) {
-				var point = new Point(x + 50, -y);
-				var placedObsticle = obsticleSymbol.place(point);
-			}
-			
-			generateTrackView(trackData);
-			
-			
-			
-			function createRoadLine(color) {
-				// Create a Paper.js Path to draw a line into it:
-				var path = new Path();
-				// Give the stroke a color
-				path.strokeColor = color;
-				var start = new Point(100, 100);
-				// Move to start and draw a line from there
-				path.moveTo(start);
-				// Note the plus operator on Point objects.
-				// PaperScript does that for us, and much more!
-				path.lineTo(start + [ 0, -50 ]);
-				return path;
-			}
-			
-			
-			var line = createRoadLine("yellow");
-			var symbol = new Symbol(line);
-			
-			for(var x = 0; x < numberOfLanes; x++) {
-				for(var y = 0; y < numberOfLinesPerLane; y++) {
-					//console.log('place a new line: ' + x * 100 + " " + y * -50);
-					var position = new Point(x * 100, -(y * 50 + y * 100));
-					//console.log(position);
-					var placedLine = symbol.place(position);
-				}
-			}
-			
-			var time1;
-			
-			var numberOfPlayers = 2;
-			function createPlayerCar(x, y, color) {
-				var racecar = new Rectangle(x, y, 100, 100);
-				var path = new Path.Rectangle(racecar);
-				
-				path.fillColor = color;
-				
-				return path;
-			}
-			var player1 = createPlayerCar(100, 500, "green");
-			var player2 = createPlayerCar(200, 500, "blue");
-			
-			function onFrame(event) {
-				if (!time1) {
-					time1 = new Date().getTime();
-				}
-				var time2 = new Date().getTime();
-				var delta = time2 - time1;
-				time1 = time2;
-				//console.log('delta: ' + delta);
-				document.getElementById("fps").innerHTML = Math.ceil(1/(delta/1000));
-				/*
-				//console.log('on frame');
-				for (var i = 0; i < numberOfLanes * numberOfLinesPerLane; i++) {
-					var item = project.activeLayer.children[i];
-					
-					item.position.y += item.bounds.height / 2;
-				}*/
-				var point = new Point(0, -10);
-				view.scrollBy(point);
-			}
-			
-			function onKeyDown(e) {
-				//console.log('key down: ' + e.key);
-				switch(e.key) {
-					case "left":
-						// player2 goes left;
-						var xPos = player2.position.getX() - 100;
-						//console.log(xPos);
-						player2.position.setX(xPos);
-						break;
-					case "right":
-						// player2 goes right;
-						var xPos = player2.position.getX() + 100;
-						player2.position.setX(xPos);
-						break;
-					case "a":
-						// player1 goes left;
-						var xPos = player1.position.getX() - 100;
-						player1.position.setX(xPos);
-						break;
-					case "d":
-						// player1 goes right;
-						var xPos = player1.position.getX() + 100;
-						player1.position.setX(xPos);
-						break;
-					case "down":
-						// zoom in
-						//view.zoom += .1;
-						break;
-					case "up":
-						//	zoom out
-						//view.zoom -= .1;
-						console.log('move center');
-						var point = new Point(0, -100);
-						view.scrollBy(point);
-						return false;
-						break;
-				}
-			}
-		</script>
-		<style>
-			html, body {
-				background: white;
-				margin: 0;
-				padding: 0;
-			}
-			#myCanvas {
-				background: grey;
-				margin: 20px;
-			}
-		</style>
-	</head>
-	<body>
-		<p>fps: <span id="fps"></span></p>
-		<canvas id="myCanvas" width="500" height="600"></canvas>
-	</body>
+                if(top) while(--top) {
+                    current = Math.floor(Math.random() * (top + 1));
+                    tmp = array[current];
+                    array[current] = array[top];
+                    array[top] = tmp;
+                }
+
+                return array;
+            }
+        
+            var row = [0, 0, 0, 0, 1];
+            var numberOfLanes = 5;
+            var numberOfLinesPerLane = 50;
+            
+            function generateTrackView(data) {
+                var rowHeight = 100,
+                    columnWidth = 100,
+                    row;
+                for (var y = 0; y < data.length; y++) {
+                    row = data[y];
+                    for (var x = 0; x < row.length; x++) {
+                        switch (row[x]) {
+                            case 0: // No Obstacle
+                                break;
+                            default: // Obstacle
+                                createObsticle(x * columnWidth, y * rowHeight);
+                                break;
+                        }
+                    }
+                }
+            }
+            
+            var obsticle = new Path.Circle({
+                center: [0, 0],
+                radius: 25,
+                fillColor: "black",
+                strockColor: "yellow"
+            });
+            var obsticleSymbol = new Symbol(obsticle);
+            
+            function createObsticle(x, y) {
+                var point = new Point(x + 50, -y);
+                var placedObsticle = obsticleSymbol.place(point);
+            }
+            
+            ////////// START TRACK GENERATION //////////
+
+            var myTrackConfig = {
+                "NumberOfLanes" : 10,
+                "NumberOfSections" : 100,
+                "NumberOfInitialOpenSections" : 5,
+                "ObstacleFrequency" : 0.4
+            }
+
+            var myTrack = new Track(myTrackConfig);
+            var mySections = myTrack.getSections();
+            console.log(mySections);
+
+            generateTrackView(mySections);
+
+            ////////// END TRACK GENERATION //////////
+            
+            
+            function createRoadLine(color) {
+                // Create a Paper.js Path to draw a line into it:
+                var path = new Path();
+                // Give the stroke a color
+                path.strokeColor = color;
+                var start = new Point(100, 100);
+                // Move to start and draw a line from there
+                path.moveTo(start);
+                // Note the plus operator on Point objects.
+                // PaperScript does that for us, and much more!
+                path.lineTo(start + [ 0, -50 ]);
+                return path;
+            }
+            
+            
+            var line = createRoadLine("yellow");
+            var symbol = new Symbol(line);
+            
+            for(var x = 0; x < numberOfLanes; x++) {
+                for(var y = 0; y < numberOfLinesPerLane; y++) {
+                    //console.log('place a new line: ' + x * 100 + " " + y * -50);
+                    var position = new Point(x * 100, -(y * 50 + y * 100));
+                    //console.log(position);
+                    var placedLine = symbol.place(position);
+                }
+            }
+            
+            var time1;
+            
+            var numberOfPlayers = 2;
+            function createPlayerCar(x, y, color) {
+                var racecar = new Rectangle(x, y, 100, 100);
+                var path = new Path.Rectangle(racecar);
+                
+                path.fillColor = color;
+                
+                return path;
+            }
+            var player1 = createPlayerCar(100, 500, "green");
+            var player2 = createPlayerCar(200, 500, "blue");
+            
+            function onFrame(event) {
+                if (!time1) {
+                    time1 = new Date().getTime();
+                }
+                var time2 = new Date().getTime();
+                var delta = time2 - time1;
+                time1 = time2;
+                //console.log('delta: ' + delta);
+                document.getElementById("fps").innerHTML = Math.ceil(1/(delta/1000));
+                /*
+                //console.log('on frame');
+                for (var i = 0; i < numberOfLanes * numberOfLinesPerLane; i++) {
+                    var item = project.activeLayer.children[i];
+                    
+                    item.position.y += item.bounds.height / 2;
+                }*/
+                var point = new Point(0, -10);
+                view.scrollBy(point);
+            }
+            
+            function onKeyDown(e) {
+                //console.log('key down: ' + e.key);
+                switch(e.key) {
+                    case "left":
+                        // player2 goes left;
+                        var xPos = player2.position.getX() - 100;
+                        //console.log(xPos);
+                        player2.position.setX(xPos);
+                        break;
+                    case "right":
+                        // player2 goes right;
+                        var xPos = player2.position.getX() + 100;
+                        player2.position.setX(xPos);
+                        break;
+                    case "a":
+                        // player1 goes left;
+                        var xPos = player1.position.getX() - 100;
+                        player1.position.setX(xPos);
+                        break;
+                    case "d":
+                        // player1 goes right;
+                        var xPos = player1.position.getX() + 100;
+                        player1.position.setX(xPos);
+                        break;
+                    case "down":
+                        // zoom in
+                        //view.zoom += .1;
+                        break;
+                    case "up":
+                        //  zoom out
+                        //view.zoom -= .1;
+                        console.log('move center');
+                        var point = new Point(0, -100);
+                        view.scrollBy(point);
+                        return false;
+                        break;
+                }
+            }
+        </script>
+        <style>
+            html, body {
+                background: white;
+                margin: 0;
+                padding: 0;
+            }
+            #myCanvas {
+                background: grey;
+                margin: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <p>fps: <span id="fps"></span></p>
+        <canvas id="myCanvas" width="500" height="600"></canvas>
+    </body>
 </html

@@ -1,53 +1,46 @@
-function Track (lanes) {
+function Track (trackConfig) {
 
     var self = this;
-    var obstacles;
-    var cars;
+    var trackConfig = trackConfig;
+    var sections = (function() {
 
-    var racecarPosition = 0;
+        var returnSections = new Array();
 
-    self.generateSections = function () {
+        // Initial Open Sections
+        for (var i=0; i<trackConfig["NumberOfInitialOpenSections"]; i++) {
 
-        var sections = new Array();
-        sections.push("<span>| | | | | |</span><br/>");
-        sections.push("<span>| | | | | |</span><br/>");
-        sections.push("<span>| | | | | |</span><br/>");
-        sections.push("<span>| | | | | |</span><br/>");
-        sections.push("<span>| | | | | |</span><br/>");
-        sections.push("<span>| | | | | |</span><br/>");
+            var tmpSection = generateRandomSection(trackConfig["NumberOfLanes"], 0.0);
+            returnSections.push(tmpSection);
+        }
 
-        for (var i=0; i<10000; i++) {
+        // Randomly Generated Sections
+        for (var i=trackConfig["NumberOfInitialOpenSections"]; i<trackConfig["NumberOfSections"]; i++) {
 
-            if (Math.random() > 0.6) {
-                sections.push("<span>| | | | | |</span><br/>");
-            } else if (Math.random() > 0.5) {
-                sections.push("<span>| | | |o| |</span><br/>");
+            var tmpSection = generateRandomSection(trackConfig["NumberOfLanes"], trackConfig["ObstacleFrequency"]);
+            returnSections.push(tmpSection);
+        }
+
+        return returnSections;
+
+    })();
+
+    function generateRandomSection (numberOfLanes, obstacleFrequency) {
+
+        var tmpSection = new Array();
+        for (var i=0; i<numberOfLanes; i++) {
+
+            if (Math.random() < obstacleFrequency) {
+                tmpSection.push(100);
             } else {
-                sections.push("<span>| |o| | | |</span><br/>");
+                tmpSection.push(0);
             }
         }
 
-        console.log("Created section with length:" + sections.length);
+        return tmpSection;
+    }
 
+    self.getSections = function () {
         return sections;
     }
-
-    self.getTrackSegment = function (yardmark, length) {
-
-        console.log("sections length:" + sections.length);
-        console.log("yardmark:" + yardmark);
-        console.log("length:" + length);
-        return sections.slice(yardmark, length);
-    }
-
-    self.getRacecarPosition = function () {
-        return racecarPosition;
-    }
-
-    self.updateRacecarPosition = function (diff) {
-        racecarPosition += diff;
-    }
-
-    var sections = self.generateSections(); // array of "| | | | | |"
 }
 
