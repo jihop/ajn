@@ -46,7 +46,11 @@
 			(function() {
 				function Clock() {
 					this.el = document.getElementById("clock");
+					this.startMusic = document.getElementById("startMusic");
+					this.raceMusic = document.getElementById("raceMusic");
+					this.endMusic = document.getElementById("endMusic");
 					this.start("startingTime", this.defaults.countdownInterval);
+					this.startMusic.play();
 				}
 				
 				Clock.prototype.defaults = {
@@ -61,6 +65,7 @@
 				Clock.prototype.start = function(howLong, interval) {
 					var self = this;
 					self.counter = this.defaults[howLong];
+					
 					self.timer = setInterval(function() {
 							self.countdown(howLong, interval);
 						}, interval);
@@ -78,8 +83,11 @@
 							game.start();
 							clearInterval(this.timer);
 							this.start("raceTime",  this.defaults.raceInterval);
+							this.raceMusic.play();
 						} else if (howLong === "raceTime") {
 							clearInterval(this.timer);
+							this.raceMusic.stop();
+							this.endMusic.play();
 							//game.end();
 						}
 					}
@@ -403,5 +411,8 @@
         </div>
 		<p>Player 1 score: <span id="score1">0</span></p>
 		<p>Player 2 score: <span id="score2">0</span></p>
+		<audio id="startMusic" src="http://themushroomkingdom.net/sounds/wav/mk64/mk64_countdown.wav" />
+		<audio id="raceMusic" src="http://themushroomkingdom.net/sounds/wav/mk64/mk64_finallap.wav" />
+		<audio id="endMusic" src="http://themushroomkingdom.net/sounds/wav/mk64/mk64_firstplace.wav" />
     </body>
 </html>
