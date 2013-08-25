@@ -274,7 +274,7 @@
                 function Player(x, y, color, initialVelocity) {
                     var self = this;
                     //var racecar = new Rectangle(x, y, 100, 100);
-                    var carPosition = new Point(x, y),
+                    var carPosition = new Point(x+50, y),
 						racecar = new Raster(color, carPosition);
 					
 					self.raster = racecar;
@@ -287,9 +287,10 @@
 					
                     self.moveForward = function(tickDuration) {
                         if(!tickDuration) {
-                            var tickDuration = 30;
+                            var tickDuration = 18;
                         }
-                        self.raster.position += self.velocity; //* tickDuration / 50;
+			// normalize velocity
+                        self.raster.position += self.velocity * tickDuration / 18;
                         self.currentDistance = self.initialPositionY - self.raster.position.y;
                     }
                     self.collideWith = function(obstacle) {
