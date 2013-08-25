@@ -266,7 +266,7 @@
                 function Player(x, y, color, initialVelocity) {
                     var self = this;
                     //var racecar = new Rectangle(x, y, 100, 100);
-                    var carPosition = new Point(x, y),
+                    var carPosition = new Point(x+50, y),
 						racecar = new Raster(color, carPosition);
 					
 					self.raster = racecar;
@@ -281,7 +281,7 @@
                         if(!tickDuration) {
                             var tickDuration = 18;
                         }
-console.log(tickDuration);
+			// normalize velocity
                         self.raster.position += self.velocity * tickDuration / 18;
                         self.currentDistance = self.initialPositionY - self.raster.position.y;
                     }
