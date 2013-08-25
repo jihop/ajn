@@ -260,7 +260,7 @@
                     self.initialPositionX = x;
                     self.initialPositionY = y;
                     self.currentLane = 0;
-                    
+		    self.color = color;
                     path.fillColor = color;
 
                     self.shape = racecar;
@@ -277,11 +277,10 @@
                         if (obstacle) {
                             var collisionVelocity = new Point(0,5);
                             self.velocity += collisionVelocity;
-                            var normalColor = self.path.fillColor;
                             self.path.fillColor = "red";
                             setTimeout(function() {
                                 self.velocity -= collisionVelocity // Restore to normal velocity
-                                self.path.fillColor = normalColor; // Restore to normal color
+                                self.path.fillColor = self.color; // Restore to normal color
                             },200);
                         }
                     }
