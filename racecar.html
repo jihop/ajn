@@ -24,14 +24,14 @@
 					this.clock = new Clock();
 					var intitialVelocity = new Point(0,-15);
 					this.playerLayer = project.activeLayer;
-					this.player1 = new Player(300, 0, "green", intitialVelocity);
-                    this.player2 = new Player(200, 0, "blue", intitialVelocity);
+					this.player1 = new Player(300, 0, "redcar", intitialVelocity);
+                    this.player2 = new Player(200, 0, "yellowcar", intitialVelocity);
                 }
 				
 				GameController.prototype.start = function() {
 					this.track = new Track();
-					this.player1.path.bringToFront();
-					this.player2.path.bringToFront();
+					this.player1.raster.bringToFront();
+					this.player2.raster.bringToFront();
 		    //Horizontal adjustment needed for the camera of about 500, because rasters are weird
 		    // and don't report position or rect correctly
                     this.camera = new Camera(this.track.baseRaster.position, this.track.baseRaster.bounds, 500);
@@ -213,13 +213,13 @@
                     this.bottomPadding = 200;
                 
                     this.repositionCamera = function(player1, player2) {
-                        var avg = (player1.path.position/2 + player2.path.position/2);
+                        var avg = (player1.raster.position/2 + player2.raster.position/2);
                         avg.y -= view.bounds.height / 4;
                         avg.x = this.fixedX;
                         var viewPadding = new Rectangle(view.bounds.x, view.bounds.y, view.bounds.width, view.bounds.height - this.bottomPadding);
-                        var intersects = viewPadding.contains(player1.path.bounds) && viewPadding.contains(player2.path.bounds);
+                        var intersects = viewPadding.contains(player1.raster.bounds) && viewPadding.contains(player2.raster.bounds);
                         
-                        while(!this.zoomOutBlocked && !(view.bounds.contains(player1.path.bounds) && view.bounds.contains(player2.path.bounds))) {
+                        while(!this.zoomOutBlocked && !(view.bounds.contains(player1.raster.bounds) && view.bounds.contains(player2.raster.bounds))) {
                             zoomOut();
                         } 
                         if (!this.zoomInBlocked && view.zoom <= this.minZoom && intersects) {
@@ -265,34 +265,31 @@
             (function() {
                 function Player(x, y, color, initialVelocity) {
                     var self = this;
-                    var racecar = new Rectangle(x, y, 100, 100);
-                    
-                    var path = new Path.Rectangle(racecar);
+                    //var racecar = new Rectangle(x, y, 100, 100);
+                    var carPosition = new Point(x, y),
+						racecar = new Raster(color, carPosition);
+					
+					self.raster = racecar;
                     self.initialPositionX = x;
                     self.initialPositionY = y;
                     self.currentLane = 0;
-                    
-                    path.fillColor = color;
 
                     self.shape = racecar;
                     self.velocity = initialVelocity;
-                    self.path = path;
+					
                     self.moveForward = function(tickDuration) {
                         if(!tickDuration) {
                             var tickDuration = 30;
                         }
-                        self.path.position += self.velocity; //* tickDuration / 50;
-                        self.currentDistance = self.initialPositionY - self.path.position.y;
+                        self.raster.position += self.velocity; //* tickDuration / 50;
+                        self.currentDistance = self.initialPositionY - self.raster.position.y;
                     }
                     self.collideWith = function(obstacle) {
                         if (obstacle) {
                             var collisionVelocity = new Point(0,5);
                             self.velocity += collisionVelocity;
-                            var normalColor = self.path.fillColor;
-                            self.path.fillColor = "red";
                             setTimeout(function() {
                                 self.velocity -= collisionVelocity // Restore to normal velocity
-                                self.path.fillColor = normalColor; // Restore to normal color
                             },200);
                         }
                     }
@@ -300,7 +297,7 @@
                         return Math.round(self.currentDistance / config_SegmentDistancePixels);
                     }
                     self.currentLaneIndex = function () {
-                        return Math.floor(self.path.position.x / config_LaneWidthPixels);
+                        return Math.floor(self.raster.position.x / config_LaneWidthPixels);
                     }
 
                     return this;
@@ -336,25 +333,25 @@
                 switch(e.key) {
                     case "left":
                         // player2 goes left;
-                        var xPos = game.player2.path.position.getX() - 100;
-                        game.player2.path.position.setX(xPos);
+                        var xPos = game.player2.raster.position.getX() - 100;
+                        game.player2.raster.position.setX(xPos);
                         return false;
                         break;
                     case "right":
                         // player2 goes right;
-                        var xPos = game.player2.path.position.getX() + 100;
-                        game.player2.path.position.setX(xPos);
+                        var xPos = game.player2.raster.position.getX() + 100;
+                        game.player2.raster.position.setX(xPos);
                         return false;
                         break;
                     case "a":
                         // player1 goes left;
-                        var xPos = game.player1.path.position.getX() - 100;
-                        game.player1.path.position.setX(xPos);
+                        var xPos = game.player1.raster.position.getX() - 100;
+                        game.player1.raster.position.setX(xPos);
                         break;
                     case "d":
                         // player1 goes right;
-                        var xPos = game.player1.path.position.getX() + 100;
-                        game.player1.path.position.setX(xPos);
+                        var xPos = game.player1.raster.position.getX() + 100;
+                        game.player1.raster.position.setX(xPos);
                         break;
                 }
             }
@@ -397,7 +394,9 @@
 		<p id="clock"></p>
         <div id="canvasWrapper"><canvas id="myCanvas" width="500" height="600"></canvas></div>
         <img src="images/road_line2.gif" id="roadLine" style="display:none;" />
-        
+        <img src="images/redcar.gif" id="redcar" style="display:none;" />
+		<img src="images/yellowcar.gif" id="yellowcar" style="display:none;" />
+		
         <div id="gameMenu">
             <a id="start" href="">Start new game</a>
 			<a id="end" href="">End current game</a>
