@@ -24,8 +24,10 @@
                     console.log('start game');
                     this.track = new Track();
                     
-                    this.camera = new Camera(this.track.baseRaster.position, this.track.baseRaster.bounds);
-                    this.player1 = new Player(100, 0, "green", new Point(0,-15));
+		    //Horizonte adjustment needed for the camera of about 500, because rasters are weird
+		    // and don't report position or rect correctly
+                    this.camera = new Camera(this.track.baseRaster.position, this.track.baseRaster.bounds, 500);
+                    this.player1 = new Player(300, 0, "green", new Point(0,-15));
                     this.player2 = new Player(200, 0, "blue", new Point(0,-15));
                     this.active = true;
                 }
@@ -79,7 +81,7 @@
                 }
                 
                 Track.prototype.defaults = {
-                    "NumberOfLanes" : 5,
+                    "NumberOfLanes" : 10,
                     "NumberOfSegments" : 100,
                     "NumberOfInitialOpenSegments" : 5,
                     "ObstacleFrequency" : 0.1
@@ -99,7 +101,7 @@
                         center: [0, 0],
                         radius: 25,
                         fillColor: "black",
-                        strockColor: "yellow"
+                        strokeColor: "yellow"
                     }),
                     obstacleSymbol = new Symbol(baseObstacle);
                 
@@ -121,7 +123,7 @@
                                 case 0: // No Obstacle
                                     break;
                                 default: // Obstacle
-                                    row[x] = createObstacle(x * columnWidth, y * rowHeight);
+                                    row[x] = createObstacle((x) * columnWidth, y * rowHeight);
                                     break;
                             }
                         }
@@ -140,7 +142,7 @@
                     // calculate combined height to reposition line during onFrame callback
                     combinedRoadLineHeight = numberOfRoadRasters * roadRasterHeight,
                     // first road line is at bottom of view
-                    roadLinePosition = new Point(0, view.bounds.height - roadRasterHeight / 2),
+                    roadLinePosition = new Point(500, view.bounds.height - roadRasterHeight / 2),
                     baseRoadLine = new Raster("roadLine", roadLinePosition),
                     roadLineSymbol = new Symbol(baseRoadLine);
                 
@@ -175,7 +177,7 @@
             ////////// START CAMERA //////////
             // Singleton
             (function() {
-                function Camera(position, bounds) {
+                function Camera(position, bounds, horizontalAdjustment) {
                     this.zoomInBlocked = false;
                     this.zoomOutBlocked = false;
                     this.bottomPadding = 200;
@@ -215,7 +217,9 @@
                     view.center = position;
                     while(!view.bounds.contains(bounds)) {
                         zoomOut();
-                    }
+		    }
+		    view.center.x += horizontalAdjustment;
+
                     this.unblockZoom();
                     this.minZoom = view.zoom;
                     this.fixedX = view.center.x;
