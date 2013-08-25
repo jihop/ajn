@@ -347,7 +347,11 @@
             document.getElementById("start").onclick = function() {
                 game.initialize();
                 return false;
-            }
+            };
+			document.getElementById("end").onclick = function() {
+				// game.end(); or game.endRace();
+				return false;
+			};
             if (autoStartGame) {
                 game.initialize();
             }
@@ -381,6 +385,7 @@
         
         <div id="gameMenu">
             <a id="start" href="">Start new game</a>
+			<a id="end" href="">End current game</a>
         </div>
     </body>
 </html>
