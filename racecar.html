@@ -12,7 +12,7 @@
             var config_SegmentDistancePixels = 100.0;
             var config_LaneWidthPixels = 100.0;
             var game,
-                autoStartGame = true; // for quick debuggin
+                autoStartGame = false; // for quick debuggin
             
             (function() {
                 function GameController() {
@@ -304,7 +304,7 @@
                 time1 = time2;
                 document.getElementById("fps").innerHTML = Math.ceil(1/(delta/1000));
                 
-                if (game.active || autoStartGame) {
+                if (game.active) {
                     game.player1.moveForward(delta);
                     game.player2.moveForward(delta);
 
