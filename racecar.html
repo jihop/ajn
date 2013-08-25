@@ -15,28 +15,43 @@
                 autoStartGame = false; // for quick debuggin
             
             (function() {
-                function GameController() {
-                // show game menu
-                console.log('show game menu');
-                };
+                function GameController() {}
                 
                 GameController.prototype.initialize = function() {
+					this.menu = document.getElementById("gameMenu");
+					this.hideMenu();
 					this.clock = new Clock();
 					var intitialVelocity = new Point(0,-15);
 					this.playerLayer = project.activeLayer;
 					this.player1 = new Player(300, 0, "redcar", intitialVelocity);
                     this.player2 = new Player(200, 0, "yellowcar", intitialVelocity);
-                }
+                };
 				
 				GameController.prototype.start = function() {
+					this.hideMenu();
 					this.track = new Track();
 					this.player1.raster.bringToFront();
 					this.player2.raster.bringToFront();
-		    //Horizontal adjustment needed for the camera of about 500, because rasters are weird
-		    // and don't report position or rect correctly
+					// Horizontal adjustment needed for the camera of about 500, because rasters are weird
+					// and don't report position or rect correctly
                     this.camera = new Camera(this.track.baseRaster.position, this.track.baseRaster.bounds, 500);
                     this.active = true;
-				}
+				};
+
+                GameController.prototype.end = function() {
+                    this.active = false;
+                }
+				
+				GameController.prototype.mute = function(mute) {
+					this.muted = mute;
+					if (this.clock) {
+						this.clock.mute();
+					}
+				};
+				
+				GameController.prototype.hideMenu = function() {
+					this.menu.style.display = "none";
+				};
 				
                 game = new GameController();
             })();
@@ -50,7 +65,9 @@
 					this.raceMusic = document.getElementById("raceMusic");
 					this.endMusic = document.getElementById("endMusic");
 					this.start("startingTime", this.defaults.countdownInterval);
-					this.startMusic.play();
+					if (!game.muted) {
+						this.startMusic.play();
+					}
 				}
 				
 				Clock.prototype.defaults = {
@@ -83,15 +100,25 @@
 							game.start();
 							clearInterval(this.timer);
 							this.start("raceTime",  this.defaults.raceInterval);
-							this.raceMusic.play();
+							if (!game.muted) {
+								this.raceMusic.play();
+							}
 						} else if (howLong === "raceTime") {
 							clearInterval(this.timer);
-							this.raceMusic.stop();
-							this.endMusic.play();
+							if (!game.muted) {
+								this.raceMusic.pause();
+								this.endMusic.play();
+							}
 							//game.end();
 						}
 					}
 					this.counter -= interval;
+				};
+				
+				Clock.prototype.mute = function() {
+					this.startMusic.pause();
+					this.raceMusic.pause();
+					this.endMusic.pause();
 				};
 				
 				window.Clock = Clock;
@@ -181,10 +208,25 @@
                         strokeColor: "yellow"
                     }),
                     obstacleSymbol = new Symbol(baseObstacle);
+
+                var finishlineBlock = new Path.Circle({
+                        center: [0, 0],
+                        radius: 25,
+                        fillColor: "red",
+                        strokeColor: "yellow"
+                    }),
+                    finishlineBlockSymbol = new Symbol(finishlineBlock);
                 
                 function createObstacle(x, y) {
                     var point = new Point(x + 50, -y),
                         placedObstacle = obstacleSymbol.place(point);
+                    
+                    return placedObstacle;
+                }
+
+                function createFinishlineBlock(x,y) {
+                    var point = new Point(x + 50, -y),
+                        placedObstacle = finishlineBlockSymbol.place(point);
                     
                     return placedObstacle;
                 }
@@ -198,6 +240,9 @@
                         for (var x = 0; x < row.length; x++) {
                             switch (row[x]) {
                                 case 0: // No Obstacle
+                                    break;
+                                case -1:
+                                    row[x] = createFinishlineBlock(x * columnWidth, y * rowHeight);
                                     break;
                                 default: // Obstacle
                                     row[x] = createObstacle(x * columnWidth, y * rowHeight);
@@ -356,6 +401,20 @@ console.log('adjusting');
                     game.player1.moveForward(delta);
                     game.player2.moveForward(delta);
 
+                    var player1SegmentIndex = game.player1.currentSegmentIndex();
+                    var player2SegmentIndex = game.player2.currentSegmentIndex();
+
+                    console.log(game.track.data.length);
+                    if (player1SegmentIndex == game.track.data.length - 10) {
+                        alert("Player 1.. LOST!");
+                        game.end();
+                    }
+
+                    if (player2SegmentIndex == game.track.data.length - 10) {
+                        alert("Player 2.. LOST!");
+                        game.end();
+                    }
+
                     game.player1.collideWith(game.track.popObstacle(game.player1.currentSegmentIndex(), game.player1.currentLaneIndex()));
                     game.player2.collideWith(game.track.popObstacle(game.player2.currentSegmentIndex(), game.player2.currentLaneIndex()));
 
@@ -411,22 +470,54 @@ console.log('adjusting');
 				// game.end(); or game.endRace();
 				return false;
 			};
+			var muteButton = document.getElementById("mute");
+			muteButton.onclick = muteGame();
+			function muteGame() {			
+				if (muteButton.checked) {
+					game.mute(true);
+				} else {
+					game.mute(false);
+				}
+			}
+			
             if (autoStartGame) {
                 game.initialize();
             }
         </script>
+		<link href="css/bootstrap.min.css" rel="stylesheet">
         <style>
             html, body {
                 background: white;
                 margin: 0;
                 padding: 0;
             }
-            #canvasWrapper {
-                margin: 0 auto;
-                width: 502px;
-            }
+			img,
+			#instructions,
+			#options {
+				display: none;
+			}
+			#gameWrapper {
+				border: 1px solid #333;
+				width: 502px;
+				height: 602px;
+				margin: 0 auto;
+				position: relative;
+			}
+			#gameMenu {
+				width: 500px;
+				height: 600px;
+				background: #333;
+				margin: 0 auto;
+				position: absolute;
+				top: 0;
+				left: 0;
+				text-align: center;
+				padding: 100px 0;
+			}
+			#gameMenu li {
+				margin-bottom: 20px;
+			}
             #myCanvas {
-                border: 1px solid black;
                 background: green;
             }
 			#clock {
@@ -439,19 +530,43 @@ console.log('adjusting');
 		<h1>Ten 2nd's</h1>
 		<p style="position: absolute; right: 20px; top: 20px;">fps: <span id="fps"></span></p>
 		<p id="clock"></p>
-        <div id="canvasWrapper"><canvas id="myCanvas" width="500" height="600"></canvas></div>
-        <img src="images/road_line2.gif" id="roadLine" style="display:none;" />
-        <img src="images/redcar.gif" id="redcar" style="display:none;" />
-		<img src="images/yellowcar.gif" id="yellowcar" style="display:none;" />
+		<p>Player 1 score: <span id="score1"></span></p>
+		<p>Player 2 score: <span id="score2"></span></p>
+        
+		<div id="gameWrapper">
+			<canvas id="myCanvas" width="500" height="600"></canvas>
+			<div id="gameMenu">
+				<ul class="list-unstyled">
+					<li><a id="start" class="btn btn-primary btn-lg" href="">Start</a></li>
+					<li><a id="instructionsLink" class="btn btn-default" href="#instructions">Instructions</a></li>
+					<li><a id="optionsLink" class="btn btn-default" href="#options">Options</a></li>
+					<li><a id="end"  class="btn btn-danger" href="">End current game</a></li>
+				</ul>
+				<div id="instructions">
+					<p>The main objective is to hit as many obstacles as possible in order to slow your vehicle down and avoid imminent death!</p>
+					<p>Player 1 uses "a" and "d" to steer his/her vehicle. Player 2 uses "&#8592;" and "&#8594;" to steer his/her vehicle.</p>
+				</div>
+				<div id="options">
+					<form>
+						<formset>
+							<div class="field">
+								<label for="mute">
+									<input id="mute" type="checkbox" checked/>
+									Mute the goddamn awesome mario kart music, this is not 1999!
+								</label>
+							</div>
+						</formset>
+					</form>
+				</div>
+			</div>
+		</div>
 		
-        <div id="gameMenu">
-            <a id="start" href="">Start new game</a>
-			<a id="end" href="">End current game</a>
-        </div>
-		<p>Player 1 score: <span id="score1">0</span></p>
-		<p>Player 2 score: <span id="score2">0</span></p>
 		<audio id="startMusic" src="http://themushroomkingdom.net/sounds/wav/mk64/mk64_countdown.wav" />
-		<audio id="raceMusic" src="http://themushroomkingdom.net/sounds/wav/mk64/mk64_finallap.wav" />
-		<audio id="endMusic" src="http://themushroomkingdom.net/sounds/wav/mk64/mk64_firstplace.wav" />
+		<audio id="raceMusic" src="http://66.90.118.45:777/ost/super-mario-kart-original-soundtrack/ahylioxlft/15-invincibility.mp3" />
+		<audio id="endMusic" src="http://66.90.118.45:777/ost/super-mario-kart-original-soundtrack/fatczpcoup/19-you-win.mp3" />
+		
+		<img src="images/road_line2.gif" id="roadLine" />
+        <img src="images/redcar.gif" id="redcar" />
+		<img src="images/yellowcar.gif" id="yellowcar" />
     </body>
 </html>
