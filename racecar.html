@@ -19,11 +19,14 @@
                 
                 GameController.prototype.initialize = function() {
 					this.menu = document.getElementById("gameMenu");
+					this.winnerName = document.getElementById("winnername");
+					
 					this.hideMenu();
+					
 					this.clock = new Clock();
 					this.playerLayer = project.activeLayer;
-					this.player1 = new Player(300, 0, "redcar", document.getElementById("score1"));
-                    this.player2 = new Player(200, 0, "yellowcar", document.getElementById("score2"));
+					this.player1 = new Player("Player 1", 300, 0, "redcar", document.getElementById("score1"));
+                    this.player2 = new Player("Player 2", 200, 0, "yellowcar", document.getElementById("score2"));
                 };
 				
 				GameController.prototype.start = function() {
@@ -40,6 +43,7 @@
                 GameController.prototype.end = function(winner) {
 					winner.increaseScore();
                     this.active = false;
+					this.showMenu(winner);
                 }
 				
 				GameController.prototype.mute = function(mute) {
@@ -51,6 +55,10 @@
 				
 				GameController.prototype.hideMenu = function() {
 					this.menu.style.display = "none";
+				};
+				GameController.prototype.showMenu = function(winner) {
+					this.winnerName.innerHTML = winner.name;
+					this.menu.style.display = "block";
 				};
 				
                 game = new GameController();
@@ -316,13 +324,14 @@
 
             ////////// START PLAYER //////////
             (function() {
-                function Player(x, y, color, scoreEl) {
+                function Player(name, x, y, color, scoreEl) {
                     var self = this;
 					// +50 to compensate for raster weirdness
                     var carPosition = new Point(x + 50, y),
 						racecar = new Raster(color, carPosition),
 						initialVelocity = new Point(0,-15);
 					
+					self.name = name;
 					self.raster = racecar;
                     self.initialPositionX = x;
                     self.initialPositionY = y;
@@ -523,6 +532,9 @@
 			#gameMenu li {
 				margin-bottom: 20px;
 			}
+			#gameMenu h2 {
+				color: #ccc;
+			}
             #myCanvas {
                 background: green;
             }
@@ -542,6 +554,7 @@
 		<div id="gameWrapper">
 			<canvas id="myCanvas" width="500" height="600"></canvas>
 			<div id="gameMenu">
+				<h2><span id="winnername"></span> has survived!!!</h2>
 				<ul class="list-unstyled">
 					<li><a id="start" class="btn btn-primary btn-lg" href="">Start</a></li>
 					<li><a id="instructionsLink" class="btn btn-default" href="#instructions">Instructions</a></li>
