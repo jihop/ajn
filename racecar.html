@@ -294,6 +294,12 @@
                         self.raster.position += self.velocity * tickDuration / 18;
                         self.currentDistance = self.initialPositionY - self.raster.position.y;
                     }
+		    self.moveLeft = function() {
+			self.velocity += new Point(-10,0);
+		    }
+		    self.moveRight = function() {
+			self.velocity += new Point(10,0);
+		    }
                     self.collideWith = function(obstacle) {
                         if (obstacle) {
                             var collisionVelocity = new Point(0,5);
