@@ -18,15 +18,20 @@
                 function GameController() {}
                 
                 GameController.prototype.initialize = function() {
-					this.menu = document.getElementById("gameMenu");
-					this.winnerName = document.getElementById("winnername");
-					
-					this.hideMenu();
-					
-					this.clock = new Clock();
-					this.playerLayer = project.activeLayer;
-					this.player1 = new Player("Player 1", 300, 0, "redcar", document.getElementById("score1"));
-                    this.player2 = new Player("Player 2", 200, 0, "yellowcar", document.getElementById("score2"));
+					if (!this.initialized) {
+						this.initialized = true;
+						
+						this.menu = document.getElementById("gameMenu");
+						this.winnerName = document.getElementById("winnername");
+						
+						this.hideMenu();
+						
+						this.clock = new Clock();
+						this.player1 = new Player("Player 1", 300, 0, "redcar", document.getElementById("score1"));
+						this.player2 = new Player("Player 2", 200, 0, "yellowcar", document.getElementById("score2"));
+					} else {
+						this.clock.reset();
+					}
                 };
 				
 				GameController.prototype.start = function() {
@@ -58,7 +63,7 @@
 				};
 				GameController.prototype.showMenu = function(winner) {
 					this.winnerName.innerHTML = winner.name;
-					this.menu.style.display = "visible";
+					this.menu.style.display = "block";
 				};
 				
                 game = new GameController();
@@ -526,6 +531,7 @@
 				};
 				var muteButton = document.getElementById("mute");
 				muteButton.onclick = muteGame;
+				muteGame();
 				function muteGame() {
 					if (muteButton.checked) {
 						game.mute(false);
