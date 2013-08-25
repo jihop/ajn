@@ -27,8 +27,10 @@
 						
 						
 						this.clock = new Clock();
-						this.player1 = new Player("Player 1", 300, 0, "redcar", document.getElementById("score1"));
-						this.player2 = new Player("Player 2", 200, 0, "yellowcar", document.getElementById("score2"));
+                        this.worldLeftBound = 0;
+                        this.worldRightBound = 1000;
+						this.player1 = new Player("Player 1", 300, 0, "redcar", document.getElementById("score1"), this.worldLeftBound, this.worldRightBound);
+						this.player2 = new Player("Player 2", 200, 0, "yellowcar", document.getElementById("score2"), this.worldLeftBound, this.worldRightBound);
 						this.track = new Track();
 						this.player1.raster.bringToFront();
 						this.player2.raster.bringToFront();
@@ -346,7 +348,7 @@
                         this.zoomOutBlocked = true;
                     }
                     // init camera
-                    view.center = position;
+                    view.center = new Point(position);
                     while(!view.bounds.contains(bounds)) {
                         zoomOut();
 		    }
@@ -365,7 +367,7 @@
 
             ////////// START PLAYER //////////
             (function() {
-                function Player(name, x, y, imgName, scoreEl) {
+                function Player(name, x, y, imgName, scoreEl, leftBound, rightBound) {
                     var self = this;
 					// +50 to compensate for raster weirdness
                     var carPosition = new Point(x + 50, y),
@@ -374,6 +376,8 @@
 					self.name = name;
 					self.x = x;
 					self.y = y;
+                    self.leftBound = leftBound;
+                    self.rightBound = rightBound;
 					self.initialVelocity = initialVelocity;
 
                     self.raster = new Raster(imgName, carPosition);
@@ -390,6 +394,9 @@
                     this.moveForward = function(tickDuration, player) {
                         if(!tickDuration) {
                             var tickDuration = 18;
+                        }
+                        if(self.raster.position.x >= self.rightBound || self.raster.position.x <= self.leftBound) {
+                            self.bounce();
                         }
 
                         //adjust towards the turning vector each frame by 1/10 of the vector
@@ -431,6 +438,10 @@
                                 self.velocity -= collisionVelocity // Restore to normal velocity
                             },200);
                         }
+                    };
+                    self.bounce = function() {
+                        self.velocity.x = -self.velocity.x;
+                        self.raster.rotate(self.velocity.x * 2);
                     };
                     self.currentSegmentIndex = function () {
                         return Math.round(self.currentDistance / config_SegmentDistancePixels);
