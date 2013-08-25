@@ -40,7 +40,9 @@
 				
 				GameController.prototype.mute = function(mute) {
 					this.muted = mute;
-					this.clock.mute();
+					if (this.clock) {
+						this.clock.mute();
+					}
 					console.log("set mute: " + mute);
 				}
 				
