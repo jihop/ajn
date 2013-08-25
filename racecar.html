@@ -32,17 +32,18 @@
 						this.track = new Track();
 						this.player1.raster.bringToFront();
 						this.player2.raster.bringToFront();
-						// Horizontal adjustment needed for the camera of about 500, because rasters are weird
-						// and don't report position or rect correctly
-						this.camera = new Camera(this.track.baseRaster.position, this.track.baseRaster.bounds, 500);
+						this.camera = new Camera(this.track.baseRaster.position, this.track.baseRaster.bounds);
+						this.camera.reposition(this.player1, this.player2);
 					} else {
 						this.clock.reset();
+						this.camera.reset();
 						this.player1.reset();
 						this.player2.reset();
 						this.track.reset();
 						this.player1.raster.bringToFront();
 						this.player2.raster.bringToFront();
-						//this.camera.reset();
+						this.camera.reset();
+						this.camera.reposition(this.player1, this.player2);
 					}
 					this.hideMenu();
                 };
@@ -189,9 +190,9 @@
                 };
 				
 				Track.prototype.reset = function() {
+					this.resetRoadLines(this.data);
 					this.data = getTrackData(this.defaults);
-					this.resetRoadLines();
-					//this.resetObstacles();
+					this.resetObstacles();
 				}
 				
 				Track.prototype.destroyView = function() {
@@ -211,7 +212,8 @@
                     // first road line is at bottom of view
                     baseRoadLinePosition = new Point(500, view.bounds.height - roadRasterHeight / 2),
                     baseRoadLine = new Raster("roadLine", baseRoadLinePosition),
-                    roadLineSymbol = new Symbol(baseRoadLine);
+                    roadLineSymbol = new Symbol(baseRoadLine),
+					roadLinesCache = [];
                 
                 function checkRoadLine(item) {
                     if (view.bounds.y + view.bounds.height < item.bounds.y) {
@@ -227,19 +229,22 @@
                     placedRoadLine.onFrame = function(e) {
                         checkRoadLine(this);
                     }
+					roadLinesCache.push(placedRoadLine);
                 }
                 
                 function generateRoadLines() {
                     for (var i = 0; i < numberOfRoadRasters; i++) {
                         createRoadLine(i);
                     }
-                    return baseRoadLine;
+                    return roadLinesCache[0];
                 }
 				
 				function resetRoadLines() {
-                    console.log('reset road lines');
-					console.log(roadLineSymbol);
-					
+					for (var i = 0; i < roadLinesCache.length; i++) {
+						var point = new Point(baseRoadLinePosition);
+						point.y -= roadRasterHeight * i;
+						roadLinesCache[i].position = point;
+					}
                 }
                 
                 window.Track.prototype.generateRoadLines = generateRoadLines;
@@ -256,7 +261,8 @@
                         fillColor: "black",
                         strokeColor: "yellow"
                     }),
-                    obstacleSymbol = new Symbol(baseObstacle);
+                    obstacleSymbol = new Symbol(baseObstacle),
+					obstacleCache = [];
 
                 var finishlineBlock = new Path.Circle({
                         center: [0, 0],
@@ -294,14 +300,21 @@
                                     row[x] = createFinishlineBlock(x * columnWidth, y * rowHeight);
                                     break;
                                 default: // Obstacle
-                                    row[x] = createObstacle(x * columnWidth, y * rowHeight);
+									var placedObstacle = createObstacle(x * columnWidth, y * rowHeight);
+                                    row[x] = placedObstacle;
+									obstacleCache.push(placedObstacle);
                                     break;
                             }
                         }
                     }
                 }
+				
+				function resetObstacles(data) {
+					console.log('reset obstacles');
+				}
                 
                 window.Track.prototype.generateObstacles = generateObstacles;
+				window.Track.prototype.resetObstacles = resetObstacles;
             })();
             ////////// END OBSTACLES //////////
 			
@@ -309,12 +322,12 @@
             ////////// START CAMERA //////////
             // Singleton
             (function() {
-                function Camera(position, bounds, horizontalAdjustment) {
+                function Camera(position, bounds) {
                     this.zoomInBlocked = false;
                     this.zoomOutBlocked = false;
                     this.bottomPadding = 200;
                 
-                    this.repositionCamera = function(player1, player2) {
+                    this.reposition = function(player1, player2) {
                         var avg = (player1.raster.position/2 + player2.raster.position/2);
                         avg.y -= view.bounds.height / 4;
                         avg.x = this.fixedX;
@@ -329,12 +342,16 @@
                         }
                         
                         view.center = avg;
-                    }
+                    };
+					
+					this.reset = function() {
+						view.center = new Point(0, 0);
+					}
                     
                     this.unblockZoom = function() {
                         this.zoomInBlocked = false;
                         this.zoomOutBlocked = false;
-                    }
+                    };
                     
                     function zoomOut() {                                    
                         view.zoom -= .01;
@@ -349,13 +366,11 @@
                     view.center = position;
                     while(!view.bounds.contains(bounds)) {
                         zoomOut();
-		    }
-		    view.center.x += horizontalAdjustment;
+					}
 
                     this.unblockZoom();
                     this.minZoom = view.zoom;
                     this.fixedX = view.center.x;
-                    
                     
                     return this;
                 }
@@ -385,6 +400,7 @@
                     self.velocity = new Point(self.initialVelocity);
                     self.spacesMovedX = 0;
                     self.turningVector = 0;
+					self.angle = 0;
                     self.maxTurningVector = 10;
 
                     this.moveForward = function(tickDuration, player) {
@@ -397,15 +413,18 @@
                             if(Math.abs(self.velocity.x) < self.maxTurningVector) {
                                 self.velocity.x += self.turningVector / 10;
                                 self.raster.rotate(self.turningVector / 5);
+								self.angle += self.turningVector / 5;
                             }
                         } else {
                             //return to center
                             if (self.velocity.x < 0) {
                                 self.velocity.x += self.maxTurningVector / 10;
                                 self.raster.rotate(self.maxTurningVector / 5);
+								self.angle += self.maxTurningVector / 5;
                             } else if (self.velocity.x > 0) {
                                 self.velocity.x -= self.maxTurningVector / 10;
                                 self.raster.rotate(-self.maxTurningVector / 5);
+								self.angle -= self.maxTurningVector / 5;
                             }
                         }
                         // rotate raster to current velocity
@@ -415,13 +434,13 @@
                         self.currentDistance = self.y - self.raster.position.y;
                     };
                     self.moveLeft = function() {
-                        self.turningVector = -10; 
+                        self.turningVector = -10;
                     };
                     self.moveRight = function() {
-                        self.turningVector = 10; 
+                        self.turningVector = 10;
                     };
                     self.moveCenter = function() {
-                        self.turningVector = 0; 
+                        self.turningVector = 0;
                     };
                     self.collideWith = function(obstacle) {
                         if (obstacle) {
@@ -448,6 +467,7 @@
 						var initialPosition = new Point(self.x + 50, self.y);
 						self.raster.position = initialPosition;
 						self.velocity = self.initialVelocity;
+						self.raster.rotate(-self.angle);
 					}
 
                     return this;
@@ -476,19 +496,17 @@
 
                     //console.log(game.track.data.length);
                     if (player1SegmentIndex == game.track.data.length - 10) {
-                        alert("Player 1.. LOST!");
                         game.end(game.player2);
                     }
 
                     if (player2SegmentIndex == game.track.data.length - 10) {
-                        alert("Player 2.. LOST!");
                         game.end(game.player1);
                     }
 
                     game.player1.collideWith(game.track.popObstacle(game.player1.currentSegmentIndex(), game.player1.currentLaneIndex()));
                     game.player2.collideWith(game.track.popObstacle(game.player2.currentSegmentIndex(), game.player2.currentLaneIndex()));
 
-                    game.camera.repositionCamera(game.player1, game.player2);
+                    game.camera.reposition(game.player1, game.player2);
                 }
             }
             
