@@ -47,8 +47,8 @@
 				};
 				
 				Track.prototype.createView = function() {
-					generateObstacles(this.data);
-					generateRoadLines();
+					this.generateObstacles(this.data);
+					this.generateRoadLines();
 				};
 				window.Track = Track;
 			})();
@@ -58,145 +58,157 @@
 			
 			////////// START OBSTACLES //////////
 			
-			var baseObstacle = new Path.Circle({
-					center: [0, 0],
-					radius: 25,
-					fillColor: "black",
-					strockColor: "yellow"
-				}),
-				obstacleSymbol = new Symbol(baseObstacle);
-            
-            function createObstacle(x, y) {
-                var point = new Point(x + 50, -y),
-					placedObstacle = obstacleSymbol.place(point);
+			(function() {
+				var baseObstacle = new Path.Circle({
+						center: [0, 0],
+						radius: 25,
+						fillColor: "black",
+						strockColor: "yellow"
+					}),
+					obstacleSymbol = new Symbol(baseObstacle);
 				
-				return placedObstacle;
-            }
-			
-			function generateObstacles(data) {
-                var rowHeight = 100,
-                    columnWidth = 100,
-                    row;
-                for (var y = 0; y < data.length; y++) {
-                    row = data[y];
-                    for (var x = 0; x < row.length; x++) {
-                        switch (row[x]) {
-                            case 0: // No Obstacle
-                                break;
-                            default: // Obstacle
-                                row[x] = createObstacle(x * columnWidth, y * rowHeight);
-                                break;
-                        }
-                    }
-                }
-            }
+				function createObstacle(x, y) {
+					var point = new Point(x + 50, -y),
+						placedObstacle = obstacleSymbol.place(point);
+					
+					return placedObstacle;
+				}
+				
+				function generateObstacles(data) {
+					var rowHeight = 100,
+						columnWidth = 100,
+						row;
+					for (var y = 0; y < data.length; y++) {
+						row = data[y];
+						for (var x = 0; x < row.length; x++) {
+							switch (row[x]) {
+								case 0: // No Obstacle
+									break;
+								default: // Obstacle
+									row[x] = createObstacle(x * columnWidth, y * rowHeight);
+									break;
+							}
+						}
+					}
+				}
+				
+				window.Track.prototype.generateObstacles = generateObstacles;
+			})();
 			
 			////////// END OBSTACLES //////////
 			
 			
 			////////// START ROAD LINES //////////
-			
-			var numberOfRoadRasters = 10,
-				roadRasterHeight = 100,
-				// calculate combined height to reposition line during onFrame callback
-				combinedRoadLineHeight = numberOfRoadRasters * roadRasterHeight * 2,
-				// first road line is at bottom of view
-				roadLinePosition = new Point(0, view.bounds.height - roadRasterHeight / 2),
-				baseRoadLine = new Raster("roadLine", roadLinePosition),
-				roadLineSymbol = new Symbol(baseRoadLine);
-			
-			function checkRoadLine(item) {
-				if (view.bounds.y + view.bounds.height < item.bounds.y) {
-					item.position.y -= combinedRoadLineHeight;
+			(function() {
+				var numberOfRoadRasters = 10,
+					roadRasterHeight = 100,
+					// calculate combined height to reposition line during onFrame callback
+					combinedRoadLineHeight = numberOfRoadRasters * roadRasterHeight * 2,
+					// first road line is at bottom of view
+					roadLinePosition = new Point(0, view.bounds.height - roadRasterHeight / 2),
+					baseRoadLine = new Raster("roadLine", roadLinePosition),
+					roadLineSymbol = new Symbol(baseRoadLine);
+				
+				function checkRoadLine(item) {
+					if (view.bounds.y + view.bounds.height < item.bounds.y) {
+						item.position.y -= combinedRoadLineHeight;
+					}
 				}
-			}
-			
-			function createRoadLine(i) {
-				var point = roadLinePosition;
-				// subsequent lines are positioned above the previous line
-				point.y -= roadRasterHeight * 2;
-				var placedRoadLine = roadLineSymbol.place(point);
-				placedRoadLine.onFrame = function(e) {
-					checkRoadLine(this);
+				
+				function createRoadLine(i) {
+					var point = roadLinePosition;
+					// subsequent lines are positioned above the previous line
+					point.y -= roadRasterHeight * 2;
+					var placedRoadLine = roadLineSymbol.place(point);
+					placedRoadLine.onFrame = function(e) {
+						checkRoadLine(this);
+					}
 				}
-			}
-			
-			function generateRoadLines() {
-				for (var i = 0; i < numberOfRoadRasters; i++) {
-					createRoadLine(i);
+				
+				function generateRoadLines() {
+					for (var i = 0; i < numberOfRoadRasters; i++) {
+						createRoadLine(i);
+					}
 				}
-			}
+				
+				window.Track.prototype.generateRoadLines = generateRoadLines;
+			})();
 			
 			////////// END ROAD LINES //////////
 			
 			
 			////////// START CAMERA //////////
-			
-			function Camera() {
-				this.zoomBlocked = false;
-				this.bottomPadding = 100;
-			
-			    this.repositionCamera = function() {
-					var avg = (game.player1.path.position/2 + game.player2.path.position/2);
-					avg.y -= view.bounds.height / 4;
-					var viewBottomPadding = new Rectangle(view.bounds.x, view.bounds.y, view.bounds.width, view.bounds.height - this.bottomPadding);
-					while(!(view.bounds.contains(game.player1.path.bounds) && view.bounds.contains(game.player2.path.bounds))) {
-						zoomOut();
-					} 
-					if (viewBottomPadding.contains(game.player1.path.bounds) && viewBottomPadding.contains(game.player2.path.bounds)) {
-						zoomIn();
+			(function() {
+				function Camera() {
+					this.zoomBlocked = false;
+					this.bottomPadding = 100;
+				
+					this.repositionCamera = function() {
+						var avg = (game.player1.path.position/2 + game.player2.path.position/2);
+						avg.y -= view.bounds.height / 4;
+						var viewBottomPadding = new Rectangle(view.bounds.x, view.bounds.y, view.bounds.width, view.bounds.height - this.bottomPadding);
+						while(!(view.bounds.contains(game.player1.path.bounds) && view.bounds.contains(game.player2.path.bounds))) {
+							zoomOut();
+						} 
+						if (viewBottomPadding.contains(game.player1.path.bounds) && viewBottomPadding.contains(game.player2.path.bounds)) {
+							zoomIn();
+						}
+						
+						view.center = avg;
 					}
 					
-					view.center = avg;
-				}
-				
-				function blockZoomIn() {
-					this.zoomBlocked = true;
-					setTimeout(function() {this.zoomBlocked = false;}, 700);
-				}
-				
-				function zoomOut() {
-					view.zoom -= .01;
-					blockZoomIn();
-				}
-				
-				function zoomIn() {
-					if (!this.zoomBlocked) {
-						view.zoom += .01;
+					function blockZoomIn() {
+						this.zoomBlocked = true;
+						setTimeout(function() {this.zoomBlocked = false;}, 700);
 					}
+					
+					function zoomOut() {
+						view.zoom -= .01;
+						blockZoomIn();
+					}
+					
+					function zoomIn() {
+						if (!this.zoomBlocked) {
+							view.zoom += .01;
+						}
+					}
+					return this;
 				}
-				return this;
-			}
+				window.Camera = Camera;
+			})();
 			
 			////////// END CAMERA //////////
 
 			////////// START PLAYER //////////
 			
-			function Player(x, y, color, initialVelocity) {
-				var self = this;
-				var racecar = new Rectangle(x, y, 100, 100);
-				
-				var path = new Path.Rectangle(racecar);
-				
-				path.fillColor = color;
-
-				self.shape = racecar;
-				self.velocity = initialVelocity;
-				self.path = path;
-				self.moveForward = function(tickDuration) {
-					if(!tickDuration) {
-						var tickDuration = 30;
-					}
-					self.path.position += self.velocity; //* tickDuration / 50;
-				}
-				self.collideWith = function(obstacle) {
-					var collisionVelocity = new Point(0,5);
-					self.velocity += collisionVelocity;
-					setTimeout(function() { self.velocity -= collisionVelocity },500);
+			(function() {
+				function Player(x, y, color, initialVelocity) {
+					var self = this;
+					var racecar = new Rectangle(x, y, 100, 100);
 					
+					var path = new Path.Rectangle(racecar);
+					
+					path.fillColor = color;
+
+					self.shape = racecar;
+					self.velocity = initialVelocity;
+					self.path = path;
+					self.moveForward = function(tickDuration) {
+						if(!tickDuration) {
+							var tickDuration = 30;
+						}
+						self.path.position += self.velocity; //* tickDuration / 50;
+					}
+					self.collideWith = function(obstacle) {
+						var collisionVelocity = new Point(0,5);
+						self.velocity += collisionVelocity;
+						setTimeout(function() { self.velocity -= collisionVelocity },500);
+						
+					}
+					return this;
 				}
-				return this;
-			}
+				window.Player = Player;
+			})();
 			
 			////////// END PLAYER //////////
 			
