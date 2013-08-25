@@ -1,0 +1,126 @@
+<html>
+<head>
+
+<style>
+span {font-family:"Courier New"; font-size:20px;}
+</style>
+
+</head>
+<body>
+
+<span id="viewport"></span>
+<span>------------</span><br/>
+<span>------------</span><br/>
+<span id="score"></span>
+
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script type="text/javascript" src="js/Track.js"></script>
+<script>
+
+$(document).ready(function() {
+
+    var myTrackConfig = {
+        "NumberOfLanes" : 10,
+        "NumberOfSegments" : 10000,
+        "NumberOfInitialOpenSegments" : 20,
+        "ObstacleFrequency" : 0.05
+    }
+
+    var mySegments = getTrackData(myTrackConfig);
+    var carPosition = 0;
+
+    var tick = 0;
+    var moveRight = 0;
+    var moveLeft = 0;
+    var speed = 65;
+
+    intervalId = setInterval(function() {
+
+        if (moveRight == 1) {
+            moveRight = 0;
+            if (carPosition < 9) carPosition++;
+        } else if (moveLeft == 1) {
+            moveLeft = 0;
+            if (carPosition > 0) carPosition--;
+        }
+
+        var currentTrackSegment = mySegments.slice(tick, tick+ 20);
+
+        // Collision Detection
+        var isGameOver = false;
+        if (mySegments[tick + 5][carPosition] == 100) {
+            myTrack.removeObstacle(tick + 5, carPosition);
+        }
+
+        mySegments[tick+5][carPosition] = -1;
+        if (mySegments[tick+4][carPosition] == -1) mySegments[tick+4][carPosition] = 0;
+        if (mySegments[tick+3][carPosition] == -1) mySegments[tick+3][carPosition] = 0;
+        if (mySegments[tick+2][carPosition] == -1) mySegments[tick+2][carPosition] = 0;
+        if (mySegments[tick+1][carPosition] == -1) mySegments[tick+1][carPosition] = 0;
+        if (mySegments[tick+0][carPosition] == -1) mySegments[tick+0][carPosition] = 0;
+
+        currentTrackSegment.reverse();
+
+        var trackRepresentation = "";
+
+        for (var i=0; i<currentTrackSegment.length; i++) {
+
+            var tmpSegment = currentTrackSegment[i];
+            console.log(tmpSegment);
+
+            var segmentRepresentation = "<span>|";
+
+            for (var j=0; j<tmpSegment.length; j++) {
+                var tmpSpace = tmpSegment[j];
+
+                if (tmpSpace === -1) {
+                    segmentRepresentation += "o";
+                } else if (tmpSpace === -100) {
+                    segmentRepresentation += "*";
+                } else if (tmpSpace === 100) {
+                    segmentRepresentation += "#";
+                } else {
+                    segmentRepresentation += "&nbsp;";
+                }
+            }
+
+            segmentRepresentation += "|</span><br/>";
+            trackRepresentation += segmentRepresentation;
+        }
+
+        $('#viewport').html("");
+        $('#viewport').html(trackRepresentation);
+
+        if (mySegments[tick+5][carPosition] == -1) mySegments[tick+5][carPosition] = 0;
+        if (currentTrackSegment[5][carPosition] == -1) currentTrackSegment[5][carPosition] = 0;
+        if (currentTrackSegment[4][carPosition] == -1) currentTrackSegment[4][carPosition] = 0;
+        if (currentTrackSegment[3][carPosition] == -1) currentTrackSegment[3][carPosition] = 0;
+        if (currentTrackSegment[2][carPosition] == -1) currentTrackSegment[2][carPosition] = 0;
+        if (currentTrackSegment[1][carPosition] == -1) currentTrackSegment[1][carPosition] = 0;
+        if (currentTrackSegment[0][carPosition] == -1) currentTrackSegment[0][carPosition] = 0;
+
+        if (isGameOver) {
+            clearInterval(intervalId);
+            $('#score').html('score: ' + tick);
+        }
+
+        tick++;
+
+    }, 66);
+
+    window.addEventListener('keydown', function(event) {
+        switch (event.keyCode) {
+            case 37: // Left
+                moveLeft = 1;
+                break;
+            case 39: // Right
+                moveRight = 1;
+                break;
+        }
+    }, false);
+
+});
+
+</script>
+</body>
+</html>
