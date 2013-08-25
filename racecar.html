@@ -15,20 +15,20 @@
                 autoStartGame = false; // for quick debuggin
             
             (function() {
-                function GameController() {
-                // show game menu
-                console.log('show game menu');
-                };
+                function GameController() {}
                 
                 GameController.prototype.initialize = function() {
+					this.menu = document.getElementById("gameMenu");
+					this.hideMenu();
 					this.clock = new Clock();
 					var intitialVelocity = new Point(0,-15);
 					this.playerLayer = project.activeLayer;
 					this.player1 = new Player(300, 0, "redcar", intitialVelocity);
                     this.player2 = new Player(200, 0, "yellowcar", intitialVelocity);
-                }
+                };
 				
 				GameController.prototype.start = function() {
+					this.hideMenu();
 					this.track = new Track();
 					this.player1.raster.bringToFront();
 					this.player2.raster.bringToFront();
@@ -36,15 +36,18 @@
 					// and don't report position or rect correctly
                     this.camera = new Camera(this.track.baseRaster.position, this.track.baseRaster.bounds, 500);
                     this.active = true;
-				}
+				};
 				
 				GameController.prototype.mute = function(mute) {
 					this.muted = mute;
 					if (this.clock) {
 						this.clock.mute();
 					}
-					console.log("set mute: " + mute);
-				}
+				};
+				
+				GameController.prototype.hideMenu = function() {
+					this.menu.style.display = "none";
+				};
 				
                 game = new GameController();
             })();
@@ -58,9 +61,7 @@
 					this.raceMusic = document.getElementById("raceMusic");
 					this.endMusic = document.getElementById("endMusic");
 					this.start("startingTime", this.defaults.countdownInterval);
-					console.log('!this.muted: ' + !this.muted);
 					if (!game.muted) {
-						console.log('play music');
 						this.startMusic.play();
 					}
 				}
@@ -99,7 +100,6 @@
 								this.raceMusic.play();
 							}
 						} else if (howLong === "raceTime") {
-							console.log('game end');
 							clearInterval(this.timer);
 							if (!game.muted) {
 								this.raceMusic.pause();
@@ -410,21 +410,40 @@
                 game.initialize();
             }
         </script>
+		<link href="css/bootstrap.min.css" rel="stylesheet">
         <style>
             html, body {
                 background: white;
                 margin: 0;
                 padding: 0;
             }
-			img {
+			img,
+			#instructions,
+			#options {
 				display: none;
 			}
-            #canvasWrapper {
-                margin: 0 auto;
-                width: 502px;
-            }
+			#gameWrapper {
+				border: 1px solid #333;
+				width: 502px;
+				height: 602px;
+				margin: 0 auto;
+				position: relative;
+			}
+			#gameMenu {
+				width: 500px;
+				height: 600px;
+				background: #333;
+				margin: 0 auto;
+				position: absolute;
+				top: 0;
+				left: 0;
+				text-align: center;
+				padding: 100px 0;
+			}
+			#gameMenu li {
+				margin-bottom: 20px;
+			}
             #myCanvas {
-                border: 1px solid black;
                 background: green;
             }
 			#clock {
@@ -437,27 +456,43 @@
 		<h1>Ten 2nd's</h1>
 		<p style="position: absolute; right: 20px; top: 20px;">fps: <span id="fps"></span></p>
 		<p id="clock"></p>
-        <div id="canvasWrapper"><canvas id="myCanvas" width="500" height="600"></canvas></div>
-        <img src="images/road_line2.gif" id="roadLine" />
-        <img src="images/redcar.gif" id="redcar" />
-		<img src="images/yellowcar.gif" id="yellowcar" />
+		<p>Player 1 score: <span id="score1"></span></p>
+		<p>Player 2 score: <span id="score2"></span></p>
+        
+		<div id="gameWrapper">
+			<canvas id="myCanvas" width="500" height="600"></canvas>
+			<div id="gameMenu">
+				<ul class="list-unstyled">
+					<li><a id="start" class="btn btn-primary btn-lg" href="">Start</a></li>
+					<li><a id="instructionsLink" class="btn btn-default" href="#instructions">Instructions</a></li>
+					<li><a id="optionsLink" class="btn btn-default" href="#options">Options</a></li>
+					<li><a id="end"  class="btn btn-danger" href="">End current game</a></li>
+				</ul>
+				<div id="instructions">
+					<p>The main objective is to hit as many obstacles as possible in order to slow your vehicle down and avoid imminent death!</p>
+					<p>Player 1 uses "a" and "d" to steer his/her vehicle. Player 2 uses "&#8592;" and "&#8594;" to steer his/her vehicle.</p>
+				</div>
+				<div id="options">
+					<form>
+						<formset>
+							<div class="field">
+								<label for="mute">
+									<input id="mute" type="checkbox" checked/>
+									Mute the goddamn awesome mario kart music, this is not 1999!
+								</label>
+							</div>
+						</formset>
+					</form>
+				</div>
+			</div>
+		</div>
 		
-        <div id="gameMenu">
-            <a id="start" href="">Start new game</a>
-			<a id="end" href="">End current game</a>
-			<form>
-				<formset>
-					<label for="mute">
-						<input id="mute" type="checkbox" checked/>
-						Mute the goddamn awesome mario kart music, this is not 1999!
-					</label>
-				</formset>
-			</form>
-        </div>
-		<p>Player 1 score: <span id="score1">0</span></p>
-		<p>Player 2 score: <span id="score2">0</span></p>
 		<audio id="startMusic" src="http://themushroomkingdom.net/sounds/wav/mk64/mk64_countdown.wav" />
 		<audio id="raceMusic" src="http://66.90.118.45:777/ost/super-mario-kart-original-soundtrack/ahylioxlft/15-invincibility.mp3" />
 		<audio id="endMusic" src="http://66.90.118.45:777/ost/super-mario-kart-original-soundtrack/fatczpcoup/19-you-win.mp3" />
+		
+		<img src="images/road_line2.gif" id="roadLine" />
+        <img src="images/redcar.gif" id="redcar" />
+		<img src="images/yellowcar.gif" id="yellowcar" />
     </body>
 </html>
