@@ -21,10 +21,9 @@
 					this.menu = document.getElementById("gameMenu");
 					this.hideMenu();
 					this.clock = new Clock();
-					var intitialVelocity = new Point(0,-15);
 					this.playerLayer = project.activeLayer;
-					this.player1 = new Player(300, 0, "redcar", intitialVelocity);
-                    this.player2 = new Player(200, 0, "yellowcar", intitialVelocity);
+					this.player1 = new Player(300, 0, "redcar", document.getElementById("score1"));
+                    this.player2 = new Player(200, 0, "yellowcar", document.getElementById("score2"));
                 };
 				
 				GameController.prototype.start = function() {
@@ -38,7 +37,8 @@
                     this.active = true;
 				};
 
-                GameController.prototype.end = function() {
+                GameController.prototype.end = function(winner) {
+					winner.increaseScore();
                     this.active = false;
                 }
 				
@@ -316,16 +316,19 @@
 
             ////////// START PLAYER //////////
             (function() {
-                function Player(x, y, color, initialVelocity) {
+                function Player(x, y, color, scoreEl) {
                     var self = this;
                     //var racecar = new Rectangle(x, y, 100, 100);
-                    var carPosition = new Point(x+50, y),
-						racecar = new Raster(color, carPosition);
+                    var carPosition = new Point(x + 50, y),
+						racecar = new Raster(color, carPosition),
+						initialVelocity = new Point(0,-15);
 					
 					self.raster = racecar;
                     self.initialPositionX = x;
                     self.initialPositionY = y;
                     self.currentLane = 0;
+					self.score = 0;
+					self.scoreEl = scoreEl;
 
                     self.shape = racecar;
                     self.velocity = initialVelocity;
@@ -337,7 +340,7 @@
 						// normalize velocity
                         self.raster.position += self.velocity * tickDuration / 18;
                         self.currentDistance = self.initialPositionY - self.raster.position.y;
-                    }
+                    };
                     self.collideWith = function(obstacle) {
                         if (obstacle) {
                             var collisionVelocity = new Point(0,5);
@@ -346,13 +349,17 @@
                                 self.velocity -= collisionVelocity // Restore to normal velocity
                             },200);
                         }
-                    }
+                    };
                     self.currentSegmentIndex = function () {
                         return Math.round(self.currentDistance / config_SegmentDistancePixels);
-                    }
+                    };
                     self.currentLaneIndex = function () {
                         return Math.floor(self.raster.position.x / config_LaneWidthPixels);
-                    }
+                    };
+					self.increaseScore = function() {
+						self.score++;
+						self.scoreEl.innerHTML = self.score; 
+					};
 
                     return this;
                 }
@@ -380,12 +387,12 @@
                     console.log(game.track.data.length);
                     if (player1SegmentIndex == game.track.data.length - 10) {
                         alert("Player 1.. LOST!");
-                        game.end();
+                        game.end(game.player2);
                     }
 
                     if (player2SegmentIndex == game.track.data.length - 10) {
                         alert("Player 2.. LOST!");
-                        game.end();
+                        game.end(game.player1);
                     }
 
                     game.player1.collideWith(game.track.popObstacle(game.player1.currentSegmentIndex(), game.player1.currentLaneIndex()));
