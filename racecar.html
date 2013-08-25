@@ -2,22 +2,56 @@
 <html>
     <head>
         <!-- Load the Paper.js library -->
-        <script type="text/javascript" src="js/paper.js"></script>
-        <script type="text/javascript" src="js/Track.js"></script>
+        <script src="js/paper.js"></script>
+        <script src="js/Track.js"></script>
 
         <!-- Define inlined PaperScript associate it with myCanvas -->
         <script type="text/paperscript" canvas="myCanvas">
+
+			////////// START GAME CONTROLLER //////////
+			
+			var game,
+				autoStartGame = false; // for quick debuggin
+			
+			(function() {
+				function GameController() {
+				// show game menu
+				console.log('show game menu');
+				};
+				
+				GameController.prototype.start = function() {
+					console.log('start game');
+					this.track = new Track();
+					this.camera = new Camera();
+					this.player1 = new Player(100, 500, "green", new Point(0,-15));
+					this.player2 = new Player(200, 500, "blue", new Point(0,-15));
+					this.active = true;
+				}
+				game = new GameController();
+			})();
+
+			////////// END GAME CONTROLLER //////////
 			
 			////////// START TRACK GENERATION //////////
-
-			var myTrackConfig = {
+			(function() {
+				function Track() {
+					this.data = getTrackData(this.defaults);
+					this.createView();
+				}
+				
+				Track.prototype.defaults = {
 					"NumberOfLanes" : 5,
 					"NumberOfSegments" : 100,
 					"NumberOfInitialOpenSegments" : 5,
 					"ObstacleFrequency" : 0.1
-				},
-				myTrack = new Track(myTrackConfig),
-				mySegments = myTrack.getSegments();
+				};
+				
+				Track.prototype.createView = function() {
+					generateObstacles(this.data);
+					generateRoadLines();
+				};
+				window.Track = Track;
+			})();
 			
             ////////// END TRACK GENERATION //////////
 			
@@ -57,9 +91,6 @@
                 }
             }
 			
-			generateObstacles(mySegments);
-			console.log(mySegments);
-			
 			////////// END OBSTACLES //////////
 			
 			
@@ -96,8 +127,6 @@
 				}
 			}
 			
-			generateRoadLines();
-			
 			////////// END ROAD LINES //////////
 			
 			
@@ -108,13 +137,13 @@
 				this.bottomPadding = 100;
 			
 			    this.repositionCamera = function() {
-					var avg = (player1.path.position/2 + player2.path.position/2);
+					var avg = (game.player1.path.position/2 + game.player2.path.position/2);
 					avg.y -= view.bounds.height / 4;
 					var viewBottomPadding = new Rectangle(view.bounds.x, view.bounds.y, view.bounds.width, view.bounds.height - this.bottomPadding);
-					while(!(view.bounds.contains(player1.path.bounds) && view.bounds.contains(player2.path.bounds))) {
+					while(!(view.bounds.contains(game.player1.path.bounds) && view.bounds.contains(game.player2.path.bounds))) {
 						zoomOut();
 					} 
-					if (viewBottomPadding.contains(player1.path.bounds) && viewBottomPadding.contains(player2.path.bounds)) {
+					if (viewBottomPadding.contains(game.player1.path.bounds) && viewBottomPadding.contains(game.player2.path.bounds)) {
 						zoomIn();
 					}
 					
@@ -138,7 +167,6 @@
 				}
 				return this;
 			}
-			var camera = new Camera();
 			
 			////////// END CAMERA //////////
 
@@ -169,10 +197,8 @@
 				}
 				return this;
 			}
-			var player1 = new Player(100, 500, "green", new Point(0,-15));
-			var player2 = new Player(200, 500, "blue", new Point(0,-15));
 			
-			////////// END CAMERA //////////
+			////////// END PLAYER //////////
 			
             var time1;
             function onFrame(event) {
@@ -184,46 +210,56 @@
                 time1 = time2;
                 document.getElementById("fps").innerHTML = Math.ceil(1/(delta/1000));
                 
-				player1.moveForward(delta);
-				player2.moveForward(delta);
-				
-				camera.repositionCamera();
+				if (game.active || autoStartGame) {
+					game.player1.moveForward(delta);
+					game.player2.moveForward(delta);
+					
+					game.camera.repositionCamera();
+				}
             }
             
             function onKeyDown(e) {
                 switch(e.key) {
                     case "left":
 						// player2 goes left;
-						var xPos = player2.path.position.getX() - 100;
-						player2.path.position.setX(xPos);
+						var xPos = game.player2.path.position.getX() - 100;
+						game.player2.path.position.setX(xPos);
 						return false;
 						break;
 					case "right":
 						// player2 goes right;
-						var xPos = player2.path.position.getX() + 100;
-						player2.path.position.setX(xPos);
+						var xPos = game.player2.path.position.getX() + 100;
+						game.player2.path.position.setX(xPos);
 						return false;
 						break;
 					case "a":
 						// player1 goes left;
-						var xPos = player1.path.position.getX() - 100;
-						player1.path.position.setX(xPos);
+						var xPos = game.player1.path.position.getX() - 100;
+						game.player1.path.position.setX(xPos);
 						break;
 					case "d":
 						// player1 goes right;
-						var xPos = player1.path.position.getX() + 100;
-						player1.path.position.setX(xPos);
+						var xPos = game.player1.path.position.getX() + 100;
+						game.player1.path.position.setX(xPos);
 						break;
 					case 'g':
-						player1.collideWith();
+						game.player1.collideWith();
 						break;
 					case 'h':
-						player2.collideWith();
+						game.player2.collideWith();
 						break;
                 }
             }
+			
+			document.getElementById("start").onclick = function() {
+				game.start();
+				return false;
+			}
+			if (autoStartGame) {
+				game.start();
+			}
         </script>
-        <style>
+		<style>
             html, body {
                 background: white;
                 margin: 0;
@@ -240,8 +276,13 @@
         </style>
     </head>
     <body>
-        <p>fps: <span id="fps"></span></p>
+		<h1>Ten 2nd's</h1>
+		<p>fps: <span id="fps"></span></p>
         <div id="canvasWrapper"><canvas id="myCanvas" width="500" height="600"></canvas></div>
 		<img src="images/road_line2.gif" id="roadLine" />
+		
+		<div id="gameMenu">
+			<a id="start" href="">Start new game</a>
+		</div>
     </body>
 </html>

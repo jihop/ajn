@@ -1,4 +1,4 @@
-function Track (trackConfig) {
+function getTrackData(trackConfig) {
 
     var self = this;
     var trackConfig = trackConfig;
@@ -21,7 +21,6 @@ function Track (trackConfig) {
         }
 
         return returnSegments;
-
     })();
 
     function generateRandomSegment (numberOfLanes, obstacleFrequency) {
@@ -38,9 +37,6 @@ function Track (trackConfig) {
 
         return tmpSegment;
     }
-
-    self.getSegments = function () {
-        return segments;
-    }
+	return segments;
 }
 
