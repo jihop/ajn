@@ -279,9 +279,10 @@
 					
                     self.moveForward = function(tickDuration) {
                         if(!tickDuration) {
-                            var tickDuration = 30;
+                            var tickDuration = 18;
                         }
-                        self.raster.position += self.velocity; //* tickDuration / 50;
+console.log(tickDuration);
+                        self.raster.position += self.velocity * tickDuration / 18;
                         self.currentDistance = self.initialPositionY - self.raster.position.y;
                     }
                     self.collideWith = function(obstacle) {
