@@ -24,24 +24,31 @@
 						this.menu = document.getElementById("gameMenu");
 						this.winnerName = document.getElementById("winnername");
 						
-						this.hideMenu();
+						
 						
 						this.clock = new Clock();
 						this.player1 = new Player("Player 1", 300, 0, "redcar", document.getElementById("score1"));
 						this.player2 = new Player("Player 2", 200, 0, "yellowcar", document.getElementById("score2"));
+						this.track = new Track();
+						this.player1.raster.bringToFront();
+						this.player2.raster.bringToFront();
+						// Horizontal adjustment needed for the camera of about 500, because rasters are weird
+						// and don't report position or rect correctly
+						this.camera = new Camera(this.track.baseRaster.position, this.track.baseRaster.bounds, 500);
 					} else {
 						this.clock.reset();
+						this.player1.reset();
+						this.player2.reset();
+						this.track.reset();
+						this.player1.raster.bringToFront();
+						this.player2.raster.bringToFront();
+						//this.camera.reset();
 					}
+					this.hideMenu();
                 };
 				
 				GameController.prototype.start = function() {
 					this.hideMenu();
-					this.track = new Track();
-					this.player1.raster.bringToFront();
-					this.player2.raster.bringToFront();
-					// Horizontal adjustment needed for the camera of about 500, because rasters are weird
-					// and don't report position or rect correctly
-                    this.camera = new Camera(this.track.baseRaster.position, this.track.baseRaster.bounds, 500);
                     this.active = true;
 				};
 
@@ -73,15 +80,19 @@
 			////////// START CLOCK //////////
 			(function() {
 				function Clock() {
-					this.el = document.getElementById("clock");
-					this.startMusic = document.getElementById("startMusic");
-					this.raceMusic = document.getElementById("raceMusic");
-					this.endMusic = document.getElementById("endMusic");
+					this.cacheElements();
 					this.start("startingTime", this.defaults.countdownInterval);
 					if (!game.muted) {
 						this.startMusic.play();
 					}
 				}
+				
+				Clock.prototype.cacheElements = function() {
+					this.el = document.getElementById("clock");
+					this.startMusic = document.getElementById("startMusic");
+					this.raceMusic = document.getElementById("raceMusic");
+					this.endMusic = document.getElementById("endMusic");
+				};
 				
 				Clock.prototype.defaults = {
 					"startingTime": 3000,
@@ -89,7 +100,8 @@
 					"startText": "GO!",
 					"raceTime": 10000,
 					"raceInterval": 100,
-					"textColor": "black"
+					"textColor": "black",
+					"endColor": "red"
 				};
 				
 				Clock.prototype.start = function(howLong, interval) {
@@ -101,11 +113,19 @@
 						}, interval);
 				};
 				
+				Clock.prototype.reset = function() {
+					this.el.style.color = this.defaults.textColor;
+					this.start("startingTime", this.defaults.countdownInterval);
+					if (!game.muted) {
+						this.startMusic.play();
+					}
+				};
+				
 				Clock.prototype.countdown = function(howLong, interval) {
 					if (this.counter > -1) {
 						this.el.innerHTML = this.counter / 1000;
 						if (howLong === "raceTime" && this.counter < 3000) {
-							this.el.style.color = "red";
+							this.el.style.color = this.defaults.endColor;
 						}
 					} else {
 						if (howLong === "startingTime") {
@@ -167,6 +187,16 @@
                         return false;
                     }
                 };
+				
+				Track.prototype.reset = function() {
+					this.data = getTrackData(this.defaults);
+					this.resetRoadLines();
+					//this.resetObstacles();
+				}
+				
+				Track.prototype.destroyView = function() {
+					
+				}
 
                 window.Track = Track;
             })();
@@ -179,8 +209,8 @@
                     // calculate combined height to reposition line during onFrame callback
                     combinedRoadLineHeight = numberOfRoadRasters * roadRasterHeight,
                     // first road line is at bottom of view
-                    roadLinePosition = new Point(500, view.bounds.height - roadRasterHeight / 2),
-                    baseRoadLine = new Raster("roadLine", roadLinePosition),
+                    baseRoadLinePosition = new Point(500, view.bounds.height - roadRasterHeight / 2),
+                    baseRoadLine = new Raster("roadLine", baseRoadLinePosition),
                     roadLineSymbol = new Symbol(baseRoadLine);
                 
                 function checkRoadLine(item) {
@@ -190,9 +220,9 @@
                 }
                 
                 function createRoadLine(i) {
-                    var point = roadLinePosition;
+                    var point = new Point(baseRoadLinePosition);
                     // subsequent lines are positioned above the previous line
-                    point.y -= roadRasterHeight;
+                    point.y -= roadRasterHeight * i;
                     var placedRoadLine = roadLineSymbol.place(point);
                     placedRoadLine.onFrame = function(e) {
                         checkRoadLine(this);
@@ -203,11 +233,17 @@
                     for (var i = 0; i < numberOfRoadRasters; i++) {
                         createRoadLine(i);
                     }
-					//game.obstacleLayer = new Layer();
                     return baseRoadLine;
+                }
+				
+				function resetRoadLines() {
+                    console.log('reset road lines');
+					console.log(roadLineSymbol);
+					
                 }
                 
                 window.Track.prototype.generateRoadLines = generateRoadLines;
+				window.Track.prototype.resetRoadLines = resetRoadLines;
             })();
             ////////// END ROAD LINES //////////
             
@@ -332,21 +368,24 @@
 
             ////////// START PLAYER //////////
             (function() {
-                function Player(name, x, y, color, scoreEl) {
+                function Player(name, x, y, imgName, scoreEl) {
                     var self = this;
-                    //var racecar = new Rectangle(x, y, 100, 100);
-                    // +50 to compensate for raster weirdness
-                    var carPosition = new Point(x+50, y);
+					// +50 to compensate for raster weirdness
+                    var carPosition = new Point(x + 50, y),
+						initialVelocity = new Point(0,-15);
+					
+					self.name = name;
+					self.x = x;
+					self.y = y;
+					self.initialVelocity = initialVelocity;
 
-                    self.raster = new Raster(color, carPosition);
-                    self.initialPositionX = x;
-                    self.initialPositionY = y;
+                    self.raster = new Raster(imgName, carPosition);
                     self.currentLane = 0;
                     self.score = 0;
                     self.scoreEl = scoreEl;
                     self.name = name;
 
-                    self.velocity = new Point(0,-15);
+                    self.velocity = new Point(self.initialVelocity);
                     self.spacesMovedX = 0;
                     self.turningVector = 0;
                     self.maxTurningVector = 10;
@@ -376,7 +415,7 @@
 
                         // normalize velocity
                         self.raster.position += self.velocity * tickDuration / 18;
-                        self.currentDistance = self.initialPositionY - self.raster.position.y;
+                        self.currentDistance = self.y - self.raster.position.y;
                     };
                     self.moveLeft = function() {
                         self.turningVector = -10; 
@@ -406,6 +445,13 @@
 						self.score++;
 						self.scoreEl.innerHTML = self.score; 
 					};
+					
+					self.reset = function() {
+						console.log('reset car position');
+						var initialPosition = new Point(self.x + 50, self.y);
+						self.raster.position = initialPosition;
+						self.velocity = self.initialVelocity;
+					}
 
                     return this;
                 }
