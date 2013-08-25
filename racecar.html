@@ -44,34 +44,45 @@
 			(function() {
 				function Clock() {
 					this.el = document.getElementById("clock");
-					this.timer = this.startCountdown(this.el);
+					this.start("startingTime", this.defaults.countdownInterval);
 				}
 				
 				Clock.prototype.defaults = {
-					"startingSeconds": 3,
+					"startingTime": 3000,
+					"countdownInterval": 1000,
 					"startText": "GO!",
-					"raceSeconds": 10
-				}
+					"raceTime": 10000,
+					"raceInterval": 100,
+					"textColor": "black"
+				};
 				
-				Clock.prototype.startCountdown = function() {
+				Clock.prototype.start = function(howLong, interval) {
 					var self = this;
-					return setInterval(function() {
-						self.tick();
-					}, 1000);
-				}
+					self.counter = this.defaults[howLong];
+					self.timer = setInterval(function() {
+							self.countdown(howLong, interval);
+						}, interval);
+				};
 				
-				Clock.prototype.tick = function() {
-					if (this.defaults.startingSeconds > -1) {
-						console.log('starting seconds: ' + this.defaults.startingSeconds);
-						console.log(this.el);
-						this.el.innerHTML = this.defaults.startingSeconds;
+				Clock.prototype.countdown = function(howLong, interval) {
+					if (this.counter > -1) {
+						this.el.innerHTML = this.counter / 1000;
+						if (howLong === "raceTime" && this.counter < 3000) {
+							this.el.style.color = "red";
+						}
 					} else {
-						this.el.innerHTML = this.defaults.startText;
-						game.start();
-						clearInterval(this.timer);
+						if (howLong === "startingTime") {
+							this.el.innerHTML = this.defaults.startText;
+							game.start();
+							clearInterval(this.timer);
+							this.start("raceTime",  this.defaults.raceInterval);
+						} else if (howLong === "raceTime") {
+							clearInterval(this.timer);
+							//game.end();
+						}
 					}
-					this.defaults.startingSeconds--;
-				}
+					this.counter -= interval;
+				};
 				
 				window.Clock = Clock;
 			})();
@@ -387,5 +398,7 @@
             <a id="start" href="">Start new game</a>
 			<a id="end" href="">End current game</a>
         </div>
+		<p>Player 1 score: <span id="score1">0</span></p>
+		<p>Player 2 score: <span id="score2">0</span></p>
     </body>
 </html>
