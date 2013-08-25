@@ -326,27 +326,29 @@
                     this.zoomInBlocked = false;
                     this.zoomOutBlocked = false;
                     this.bottomPadding = 200;
+                    this.sidePadding = 200;
                 
                     this.reposition = function(player1, player2) {
                         var avg = (player1.raster.position/2 + player2.raster.position/2);
                         avg.y -= view.bounds.height / 4;
                         avg.x = this.fixedX;
-                        var viewPadding = new Rectangle(view.bounds.x, view.bounds.y, view.bounds.width, view.bounds.height - this.bottomPadding);
+                        var viewPadding = new Rectangle(view.bounds.x + this.sidePadding, view.bounds.y, view.bounds.width - (this.sidePadding * 2), view.bounds.height - this.bottomPadding);
                         var intersects = viewPadding.contains(player1.raster.bounds) && viewPadding.contains(player2.raster.bounds);
+
+                        view.center = avg;
                         
                         while(!this.zoomOutBlocked && !(view.bounds.contains(player1.raster.bounds) && view.bounds.contains(player2.raster.bounds))) {
                             zoomOut();
-                        } 
+                        }
+
                         if (!this.zoomInBlocked && view.zoom <= this.minZoom && intersects) {
                             zoomIn();
                         }
-                        
-                        view.center = avg;
                     };
 					
 					this.reset = function() {
 						view.center = new Point(0, 0);
-					}
+					};
                     
                     this.unblockZoom = function() {
                         this.zoomInBlocked = false;
@@ -362,6 +364,7 @@
                         view.zoom += .01;
                         this.zoomOutBlocked = true;
                     }
+
                     // init camera
                     view.center = position;
                     while(!view.bounds.contains(bounds)) {
