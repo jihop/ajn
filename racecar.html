@@ -32,8 +32,8 @@
 					this.track = new Track();
 					this.player1.raster.bringToFront();
 					this.player2.raster.bringToFront();
-		    //Horizontal adjustment needed for the camera of about 500, because rasters are weird
-		    // and don't report position or rect correctly
+					// Horizontal adjustment needed for the camera of about 500, because rasters are weird
+					// and don't report position or rect correctly
                     this.camera = new Camera(this.track.baseRaster.position, this.track.baseRaster.bounds, 500);
                     this.active = true;
 				}
@@ -41,6 +41,14 @@
                 GameController.prototype.end = function() {
                     this.active = false;
                 }
+				
+				GameController.prototype.mute = function(mute) {
+					this.muted = mute;
+					if (this.clock) {
+						this.clock.mute();
+					}
+					console.log("set mute: " + mute);
+				}
 				
                 game = new GameController();
             })();
@@ -50,7 +58,15 @@
 			(function() {
 				function Clock() {
 					this.el = document.getElementById("clock");
+					this.startMusic = document.getElementById("startMusic");
+					this.raceMusic = document.getElementById("raceMusic");
+					this.endMusic = document.getElementById("endMusic");
 					this.start("startingTime", this.defaults.countdownInterval);
+					console.log('!this.muted: ' + !this.muted);
+					if (!game.muted) {
+						console.log('play music');
+						this.startMusic.play();
+					}
 				}
 				
 				Clock.prototype.defaults = {
@@ -65,6 +81,7 @@
 				Clock.prototype.start = function(howLong, interval) {
 					var self = this;
 					self.counter = this.defaults[howLong];
+					
 					self.timer = setInterval(function() {
 							self.countdown(howLong, interval);
 						}, interval);
@@ -82,12 +99,26 @@
 							game.start();
 							clearInterval(this.timer);
 							this.start("raceTime",  this.defaults.raceInterval);
+							if (!game.muted) {
+								this.raceMusic.play();
+							}
 						} else if (howLong === "raceTime") {
+							console.log('game end');
 							clearInterval(this.timer);
+							if (!game.muted) {
+								this.raceMusic.pause();
+								this.endMusic.play();
+							}
 							//game.end();
 						}
 					}
 					this.counter -= interval;
+				};
+				
+				Clock.prototype.mute = function() {
+					this.startMusic.pause();
+					this.raceMusic.pause();
+					this.endMusic.pause();
 				};
 				
 				window.Clock = Clock;
@@ -288,7 +319,7 @@
                 function Player(x, y, color, initialVelocity) {
                     var self = this;
                     //var racecar = new Rectangle(x, y, 100, 100);
-                    var carPosition = new Point(x, y),
+                    var carPosition = new Point(x+50, y),
 						racecar = new Raster(color, carPosition);
 					
 					self.raster = racecar;
@@ -301,9 +332,10 @@
 					
                     self.moveForward = function(tickDuration) {
                         if(!tickDuration) {
-                            var tickDuration = 30;
+                            var tickDuration = 18;
                         }
-                        self.raster.position += self.velocity; //* tickDuration / 50;
+						// normalize velocity
+                        self.raster.position += self.velocity * tickDuration / 18;
                         self.currentDistance = self.initialPositionY - self.raster.position.y;
                     }
                     self.collideWith = function(obstacle) {
@@ -400,6 +432,16 @@
 				// game.end(); or game.endRace();
 				return false;
 			};
+			var muteButton = document.getElementById("mute");
+			muteButton.onclick = muteGame();
+			function muteGame() {			
+				if (muteButton.checked) {
+					game.mute(true);
+				} else {
+					game.mute(false);
+				}
+			}
+			
             if (autoStartGame) {
                 game.initialize();
             }
@@ -410,6 +452,9 @@
                 margin: 0;
                 padding: 0;
             }
+			img {
+				display: none;
+			}
             #canvasWrapper {
                 margin: 0 auto;
                 width: 502px;
@@ -429,15 +474,26 @@
 		<p style="position: absolute; right: 20px; top: 20px;">fps: <span id="fps"></span></p>
 		<p id="clock"></p>
         <div id="canvasWrapper"><canvas id="myCanvas" width="500" height="600"></canvas></div>
-        <img src="images/road_line2.gif" id="roadLine" style="display:none;" />
-        <img src="images/redcar.gif" id="redcar" style="display:none;" />
-		<img src="images/yellowcar.gif" id="yellowcar" style="display:none;" />
+        <img src="images/road_line2.gif" id="roadLine" />
+        <img src="images/redcar.gif" id="redcar" />
+		<img src="images/yellowcar.gif" id="yellowcar" />
 		
         <div id="gameMenu">
             <a id="start" href="">Start new game</a>
 			<a id="end" href="">End current game</a>
+			<form>
+				<formset>
+					<label for="mute">
+						<input id="mute" type="checkbox" checked/>
+						Mute the goddamn awesome mario kart music, this is not 1999!
+					</label>
+				</formset>
+			</form>
         </div>
 		<p>Player 1 score: <span id="score1">0</span></p>
 		<p>Player 2 score: <span id="score2">0</span></p>
+		<audio id="startMusic" src="http://themushroomkingdom.net/sounds/wav/mk64/mk64_countdown.wav" />
+		<audio id="raceMusic" src="http://66.90.118.45:777/ost/super-mario-kart-original-soundtrack/ahylioxlft/15-invincibility.mp3" />
+		<audio id="endMusic" src="http://66.90.118.45:777/ost/super-mario-kart-original-soundtrack/fatczpcoup/19-you-win.mp3" />
     </body>
 </html>
