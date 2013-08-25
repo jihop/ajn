@@ -32,10 +32,16 @@
 					this.track = new Track();
 					this.player1.raster.bringToFront();
 					this.player2.raster.bringToFront();
-		    //Horizontal adjustment needed for the camera of about 500, because rasters are weird
-		    // and don't report position or rect correctly
+					// Horizontal adjustment needed for the camera of about 500, because rasters are weird
+					// and don't report position or rect correctly
                     this.camera = new Camera(this.track.baseRaster.position, this.track.baseRaster.bounds, 500);
                     this.active = true;
+				}
+				
+				GameController.prototype.mute = function(mute) {
+					this.muted = mute;
+					this.clock.mute();
+					console.log("set mute: " + mute);
 				}
 				
                 game = new GameController();
@@ -50,7 +56,11 @@
 					this.raceMusic = document.getElementById("raceMusic");
 					this.endMusic = document.getElementById("endMusic");
 					this.start("startingTime", this.defaults.countdownInterval);
-					this.startMusic.play();
+					console.log('!this.muted: ' + !this.muted);
+					if (!game.muted) {
+						console.log('play music');
+						this.startMusic.play();
+					}
 				}
 				
 				Clock.prototype.defaults = {
@@ -83,15 +93,26 @@
 							game.start();
 							clearInterval(this.timer);
 							this.start("raceTime",  this.defaults.raceInterval);
-							this.raceMusic.play();
+							if (!game.muted) {
+								this.raceMusic.play();
+							}
 						} else if (howLong === "raceTime") {
+							console.log('game end');
 							clearInterval(this.timer);
-							this.raceMusic.stop();
-							this.endMusic.play();
+							if (!game.muted) {
+								this.raceMusic.pause();
+								this.endMusic.play();
+							}
 							//game.end();
 						}
 					}
 					this.counter -= interval;
+				};
+				
+				Clock.prototype.mute = function() {
+					this.startMusic.pause();
+					this.raceMusic.pause();
+					this.endMusic.pause();
 				};
 				
 				window.Clock = Clock;
@@ -289,7 +310,7 @@
                         if(!tickDuration) {
                             var tickDuration = 18;
                         }
-			// normalize velocity
+						// normalize velocity
                         self.raster.position += self.velocity * tickDuration / 18;
                         self.currentDistance = self.initialPositionY - self.raster.position.y;
                     }
@@ -373,6 +394,13 @@
 				// game.end(); or game.endRace();
 				return false;
 			};
+			document.getElementById("mute").onclick = function() {
+				if (this.checked) {
+					game.mute(true);
+				} else {
+					game.mute(false);
+				}
+			}
             if (autoStartGame) {
                 game.initialize();
             }
@@ -409,11 +437,19 @@
         <div id="gameMenu">
             <a id="start" href="">Start new game</a>
 			<a id="end" href="">End current game</a>
+			<form>
+				<formset>
+					<label for="mute">
+						<input id="mute" type="checkbox" />
+						Mute the goddamn awesome mario kart music, this is not 1999!
+					</label>
+				</formset>
+			</form>
         </div>
 		<p>Player 1 score: <span id="score1">0</span></p>
 		<p>Player 2 score: <span id="score2">0</span></p>
 		<audio id="startMusic" src="http://themushroomkingdom.net/sounds/wav/mk64/mk64_countdown.wav" />
-		<audio id="raceMusic" src="http://themushroomkingdom.net/sounds/wav/mk64/mk64_finallap.wav" />
-		<audio id="endMusic" src="http://themushroomkingdom.net/sounds/wav/mk64/mk64_firstplace.wav" />
+		<audio id="raceMusic" src="http://66.90.118.45:777/ost/super-mario-kart-original-soundtrack/ahylioxlft/15-invincibility.mp3" />
+		<audio id="endMusic" src="http://66.90.118.45:777/ost/super-mario-kart-original-soundtrack/fatczpcoup/19-you-win.mp3" />
     </body>
 </html>
