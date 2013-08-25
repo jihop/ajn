@@ -13,7 +13,7 @@
             var config_SegmentDistancePixels = 100.0;
             var config_LaneWidthPixels = 100.0;
             var game,
-                autoStartGame = false; // for quick debuggin
+                autoStartGame = true; // for quick debuggin
             
             (function() {
                 function GameController() {
@@ -43,7 +43,7 @@
                 }
                 
                 Track.prototype.defaults = {
-                    "NumberOfLanes" : 5,
+                    "NumberOfLanes" : 10,
                     "NumberOfSegments" : 100,
                     "NumberOfInitialOpenSegments" : 5,
                     "ObstacleFrequency" : 0.1
@@ -53,6 +53,18 @@
                     this.baseRaster = this.generateRoadLines();
                     this.generateObstacles(this.data);
                 };
+
+                Track.prototype.popObstacle = function(segmentIndex, laneIndex) {
+                    if (this.data[segmentIndex] && this.data[segmentIndex][laneIndex]) {
+                        var tmpObstacle = this.data[segmentIndex][laneIndex];
+                        this.data[segmentIndex][laneIndex].remove();
+                        this.data[segmentIndex][laneIndex] = 0;
+                        return tmpObstacle;
+                    } else {
+                        return false;
+                    }
+                };
+
                 window.Track = Track;
             })();
             
@@ -79,8 +91,7 @@
                 
                 function generateObstacles(data) {
                     var rowHeight = 100,
-                        columnWidth = 100,
-                        row;
+                        columnWidth = 100, row;
                     for (var y = 0; y < data.length; y++) {
                         row = data[y];
                         for (var x = 0; x < row.length; x++) {
@@ -223,10 +234,16 @@
                         self.currentDistance = self.initialPositionY - self.path.position.y;
                     }
                     self.collideWith = function(obstacle) {
-                        var collisionVelocity = new Point(0,5);
-                        self.velocity += collisionVelocity;
-                        setTimeout(function() { self.velocity -= collisionVelocity },500);
-                        
+                        if (obstacle) {
+                            var collisionVelocity = new Point(0,5);
+                            self.velocity += collisionVelocity;
+                            var normalColor = self.path.fillColor;
+                            self.path.fillColor = "red";
+                            setTimeout(function() {
+                                self.velocity -= collisionVelocity // Restore to normal velocity
+                                self.path.fillColor = normalColor; // Restore to normal color
+                            },200);
+                        }
                     }
                     self.currentSegmentIndex = function () {
                         return Math.round(self.currentDistance / config_SegmentDistancePixels);
@@ -256,30 +273,9 @@
                     game.player1.moveForward(delta);
                     game.player2.moveForward(delta);
 
-                    var player1LaneIndex = game.player1.currentLaneIndex();
-                    var player1SegmentIndex = game.player1.currentSegmentIndex();
+                    game.player1.collideWith(game.track.popObstacle(game.player1.currentSegmentIndex(), game.player1.currentLaneIndex()));
+                    game.player2.collideWith(game.track.popObstacle(game.player2.currentSegmentIndex(), game.player2.currentLaneIndex()));
 
-                    if (game.track.data[player1SegmentIndex] && game.track.data[player1SegmentIndex][player1LaneIndex]) {
-                        game.player1.path.fillColor = "red";
-                        game.player1.collideWith();
-                        game.track.data[player1SegmentIndex][player1LaneIndex].remove();
-                        game.track.data[player1SegmentIndex][player1LaneIndex] = 0;
-                    } else {
-                        game.player1.path.fillColor = "green";
-                    }
-
-                    var player2LaneIndex = game.player2.currentLaneIndex();
-                    var player2SegmentIndex = game.player2.currentSegmentIndex();
-
-                    if (game.track.data[player2SegmentIndex] && game.track.data[player2SegmentIndex][player2LaneIndex]) {
-                        game.player2.path.fillColor = "red";
-                        game.player2.collideWith();
-                        game.track.data[player2SegmentIndex][player2LaneIndex].remove();
-                        game.track.data[player2SegmentIndex][player2LaneIndex] = 0;
-                    } else {
-                        game.player2.path.fillColor = "blue";
-                    }
-                    
                     game.camera.repositionCamera(game.player1, game.player2);
                 }
             }
@@ -309,12 +305,6 @@
                         // player1 goes right;
                         var xPos = game.player1.path.position.getX() + 100;
                         game.player1.path.position.setX(xPos);
-                        break;
-                    case 'g':
-                        game.player1.collideWith();
-                        break;
-                    case 'h':
-                        game.player2.collideWith();
                         break;
                 }
             }
