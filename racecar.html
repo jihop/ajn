@@ -37,6 +37,10 @@
                     this.camera = new Camera(this.track.baseRaster.position, this.track.baseRaster.bounds, 500);
                     this.active = true;
 				}
+
+                GameController.prototype.end = function() {
+                    this.active = false;
+                }
 				
                 game = new GameController();
             })();
@@ -173,10 +177,25 @@
                         strokeColor: "yellow"
                     }),
                     obstacleSymbol = new Symbol(baseObstacle);
+
+                var finishlineBlock = new Path.Circle({
+                        center: [0, 0],
+                        radius: 25,
+                        fillColor: "red",
+                        strokeColor: "yellow"
+                    }),
+                    finishlineBlockSymbol = new Symbol(finishlineBlock);
                 
                 function createObstacle(x, y) {
                     var point = new Point(x + 50, -y),
                         placedObstacle = obstacleSymbol.place(point);
+                    
+                    return placedObstacle;
+                }
+
+                function createFinishlineBlock(x,y) {
+                    var point = new Point(x + 50, -y),
+                        placedObstacle = finishlineBlockSymbol.place(point);
                     
                     return placedObstacle;
                 }
@@ -190,6 +209,9 @@
                         for (var x = 0; x < row.length; x++) {
                             switch (row[x]) {
                                 case 0: // No Obstacle
+                                    break;
+                                case -1:
+                                    row[x] = createFinishlineBlock(x * columnWidth, y * rowHeight);
                                     break;
                                 default: // Obstacle
                                     row[x] = createObstacle(x * columnWidth, y * rowHeight);
@@ -319,6 +341,20 @@
                 if (game.active) {
                     game.player1.moveForward(delta);
                     game.player2.moveForward(delta);
+
+                    var player1SegmentIndex = game.player1.currentSegmentIndex();
+                    var player2SegmentIndex = game.player2.currentSegmentIndex();
+
+                    console.log(game.track.data.length);
+                    if (player1SegmentIndex == game.track.data.length - 10) {
+                        alert("Player 1.. LOST!");
+                        game.end();
+                    }
+
+                    if (player2SegmentIndex == game.track.data.length - 10) {
+                        alert("Player 2.. LOST!");
+                        game.end();
+                    }
 
                     game.player1.collideWith(game.track.popObstacle(game.player1.currentSegmentIndex(), game.player1.currentLaneIndex()));
                     game.player2.collideWith(game.track.popObstacle(game.player2.currentSegmentIndex(), game.player2.currentLaneIndex()));

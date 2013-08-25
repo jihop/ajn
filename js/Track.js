@@ -20,6 +20,10 @@ function getTrackData(trackConfig) {
             returnSegments.push(tmpSegment);
         }
 
+        for (var i=0; i<10; i++) {
+            returnSegments.push(generateFinishlineSegment(trackConfig["NumberOfLanes"]));
+        }
+
         return returnSegments;
     })();
 
@@ -33,6 +37,16 @@ function getTrackData(trackConfig) {
             } else {
                 tmpSegment.push(0);
             }
+        }
+
+        return tmpSegment;
+    }
+
+    function generateFinishlineSegment (numberOfLanes) {
+
+        var tmpSegment = new Array();
+        for (var i=0; i<numberOfLanes; i++) {
+            tmpSegment.push(-1);
         }
 
         return tmpSegment;
