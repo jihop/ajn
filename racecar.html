@@ -18,13 +18,20 @@
                 function GameController() {}
                 
                 GameController.prototype.initialize = function() {
-					this.menu = document.getElementById("gameMenu");
-					this.hideMenu();
-					this.clock = new Clock();
-					var intitialVelocity = new Point(0,-15);
-					this.playerLayer = project.activeLayer;
-					this.player1 = new Player(300, 0, "redcar", intitialVelocity);
-                    this.player2 = new Player(200, 0, "yellowcar", intitialVelocity);
+					if (!this.initialized) {
+						this.initialized = true;
+						
+						this.menu = document.getElementById("gameMenu");
+						this.winnerName = document.getElementById("winnername");
+						
+						this.hideMenu();
+						
+						this.clock = new Clock();
+						this.player1 = new Player("Player 1", 300, 0, "redcar", document.getElementById("score1"));
+						this.player2 = new Player("Player 2", 200, 0, "yellowcar", document.getElementById("score2"));
+					} else {
+						this.clock.reset();
+					}
                 };
 				
 				GameController.prototype.start = function() {
@@ -38,8 +45,10 @@
                     this.active = true;
 				};
 
-                GameController.prototype.end = function() {
+                GameController.prototype.end = function(winner) {
+					winner.increaseScore();
                     this.active = false;
+					this.showMenu(winner);
                 }
 				
 				GameController.prototype.mute = function(mute) {
@@ -51,6 +60,10 @@
 				
 				GameController.prototype.hideMenu = function() {
 					this.menu.style.display = "none";
+				};
+				GameController.prototype.showMenu = function(winner) {
+					this.winnerName.innerHTML = winner.name;
+					this.menu.style.display = "block";
 				};
 				
                 game = new GameController();
@@ -316,58 +329,61 @@
 
             ////////// START PLAYER //////////
             (function() {
-                function Player(x, y, color, initialVelocity) {
+                function Player(name, x, y, color, scoreEl) {
                     var self = this;
                     //var racecar = new Rectangle(x, y, 100, 100);
-		    // +50 to compensate for raster weirdness
+                    // +50 to compensate for raster weirdness
                     var carPosition = new Point(x+50, y);
 
-		    self.raster = new Raster(color, carPosition);
-            self.initialPositionX = x;
-            self.initialPositionY = y;
-            self.currentLane = 0;
+                    self.raster = new Raster(color, carPosition);
+                    self.initialPositionX = x;
+                    self.initialPositionY = y;
+                    self.currentLane = 0;
+                    self.score = 0;
+                    self.scoreEl = scoreEl;
+                    self.name = name;
 
-            self.velocity = new Point(initialVelocity);
-		    self.spacesMovedX = 0;
-		    self.turningVector = 0;
-		    self.maxTurningVector = 10;
-					
-            this.moveForward = function(tickDuration, player) {
-                if(!tickDuration) {
-                    var tickDuration = 18;
-                }
+                    self.velocity = new Point(0,-15);
+                    self.spacesMovedX = 0;
+                    self.turningVector = 0;
+                    self.maxTurningVector = 10;
 
-                //adjust towards the turning vector each frame by 1/10 of the vector
-                if(self.turningVector !== 0) {
-                    if(Math.abs(self.velocity.x) < self.maxTurningVector) {
-                        self.velocity.x += self.turningVector / 10;
-                        self.raster.rotate(self.turningVector / 5);
-                    }
-                } else {
-                    //return to center
-                    if (self.velocity.x < 0) {
-                        self.velocity.x += self.maxTurningVector / 10;
-                        self.raster.rotate(self.maxTurningVector / 5);
-                    } else if (self.velocity.x > 0) {
-                        self.velocity.x -= self.maxTurningVector / 10;
-                        self.raster.rotate(-self.maxTurningVector / 5);
-                    }
-                }
-                // rotate raster to current velocity
+                    this.moveForward = function(tickDuration, player) {
+                        if(!tickDuration) {
+                            var tickDuration = 18;
+                        }
 
-                // normalize velocity
-                self.raster.position += self.velocity * tickDuration / 18;
-                self.currentDistance = self.initialPositionY - self.raster.position.y;
-            }
-		    self.moveLeft = function() {
-			self.turningVector = -10; 
-		    }
-		    self.moveRight = function() {
-			self.turningVector = 10; 
-		    }
-		    self.moveCenter = function() {
-			self.turningVector = 0; 
-		    }
+                        //adjust towards the turning vector each frame by 1/10 of the vector
+                        if(self.turningVector !== 0) {
+                            if(Math.abs(self.velocity.x) < self.maxTurningVector) {
+                                self.velocity.x += self.turningVector / 10;
+                                self.raster.rotate(self.turningVector / 5);
+                            }
+                        } else {
+                            //return to center
+                            if (self.velocity.x < 0) {
+                                self.velocity.x += self.maxTurningVector / 10;
+                                self.raster.rotate(self.maxTurningVector / 5);
+                            } else if (self.velocity.x > 0) {
+                                self.velocity.x -= self.maxTurningVector / 10;
+                                self.raster.rotate(-self.maxTurningVector / 5);
+                            }
+                        }
+                        // rotate raster to current velocity
+
+                        // normalize velocity
+                        self.raster.position += self.velocity * tickDuration / 18;
+                        self.currentDistance = self.initialPositionY - self.raster.position.y;
+                    };
+                    self.moveLeft = function() {
+                        self.turningVector = -10; 
+                    };
+                    self.moveRight = function() {
+                        self.turningVector = 10; 
+                    };
+                    self.moveCenter = function() {
+                        self.turningVector = 0; 
+                    };
                     self.collideWith = function(obstacle) {
                         if (obstacle) {
                             var collisionVelocity = new Point(0,5);
@@ -376,13 +392,17 @@
                                 self.velocity -= collisionVelocity // Restore to normal velocity
                             },200);
                         }
-                    }
+                    };
                     self.currentSegmentIndex = function () {
                         return Math.round(self.currentDistance / config_SegmentDistancePixels);
-                    }
+                    };
                     self.currentLaneIndex = function () {
                         return Math.floor(self.raster.position.x / config_LaneWidthPixels);
-                    }
+                    };
+					self.increaseScore = function() {
+						self.score++;
+						self.scoreEl.innerHTML = self.score; 
+					};
 
                     return this;
                 }
@@ -411,12 +431,12 @@
                     //console.log(game.track.data.length);
                     if (player1SegmentIndex == game.track.data.length - 10) {
                         alert("Player 1.. LOST!");
-                        game.end();
+                        game.end(game.player2);
                     }
 
                     if (player2SegmentIndex == game.track.data.length - 10) {
                         alert("Player 2.. LOST!");
-                        game.end();
+                        game.end(game.player1);
                     }
 
                     game.player1.collideWith(game.track.popObstacle(game.player1.currentSegmentIndex(), game.player1.currentLaneIndex()));
@@ -449,23 +469,65 @@
              }
 
             
-            document.getElementById("start").onclick = function() {
-                game.initialize();
-                return false;
-            };
-			document.getElementById("end").onclick = function() {
-				// game.end(); or game.endRace();
-				return false;
-			};
-			var muteButton = document.getElementById("mute");
-			muteButton.onclick = muteGame();
-			function muteGame() {			
-				if (muteButton.checked) {
-					game.mute(true);
-				} else {
-					game.mute(false);
+			
+			////////// START GAME MENU //////////
+			(function() {
+				var gameControls = document.getElementById("gameControls");
+				
+				document.getElementById("start").onclick = function() {
+					game.initialize();
+					return false;
+				};
+				document.getElementById("instructionsLink").onclick = function() {
+					hideGameControls();
+					showSubMenu(this);
+					return false;
+				};
+				document.getElementById("optionsLink").onclick = function() {
+					hideGameControls();
+					showSubMenu(this);
+					return false;
+				};
+				var backLinks = document.getElementsByClassName("backLink");
+				for (var i = 0; i < backLinks.length; i++) {
+					backLinks[i].onclick = function() {
+						showGameControls();
+						hideSubMenu(this);
+						return false;
+					}
 				}
-			}
+				function showGameControls() {
+					gameControls.style.display = "block";
+				}
+				function hideGameControls() {
+					gameControls.style.display = "none";
+				}
+				function showSubMenu(button) {
+					var id = button.href.split("#")[1],
+						subMenu = document.getElementById(id);
+						
+					subMenu.style.display = "block";
+				}
+				function hideSubMenu(button) {
+					var subMenu = button.parentNode.parentNode.parentNode;
+					subMenu.style.display = "none";
+				}
+				document.getElementById("end").onclick = function() {
+					// game.end(); or game.endRace();
+					return false;
+				};
+				var muteButton = document.getElementById("mute");
+				muteButton.onclick = muteGame;
+				muteGame();
+				function muteGame() {
+					if (muteButton.checked) {
+						game.mute(false);
+					} else {
+						game.mute(true);
+					}
+				}
+			})();
+			////////// END GAME MENU //////////
 			
             if (autoStartGame) {
                 game.initialize();
@@ -479,7 +541,7 @@
                 padding: 0;
             }
 			img,
-			#instructions,
+			#instructions, 
 			#options {
 				display: none;
 			}
@@ -498,11 +560,23 @@
 				position: absolute;
 				top: 0;
 				left: 0;
-				text-align: center;
-				padding: 100px 0;
+				padding: 100px;
 			}
 			#gameMenu li {
 				margin-bottom: 20px;
+			}
+			#gameMenu li,
+			#gameMenu a {
+				text-align: center;
+			}
+			#gameMenu h2 {
+				visibility: hidden;
+				text-align: center;
+			}
+			#gameMenu h2,
+			#instructions, 
+			#options {
+				color: #ccc;
 			}
             #myCanvas {
                 background: green;
@@ -523,27 +597,36 @@
 		<div id="gameWrapper">
 			<canvas id="myCanvas" width="500" height="600"></canvas>
 			<div id="gameMenu">
-				<ul class="list-unstyled">
+				<h2><span id="winnername"></span> has survived!!!</h2>
+				<ul id="gameControls" class="list-unstyled">
 					<li><a id="start" class="btn btn-primary btn-lg" href="">Start</a></li>
 					<li><a id="instructionsLink" class="btn btn-default" href="#instructions">Instructions</a></li>
 					<li><a id="optionsLink" class="btn btn-default" href="#options">Options</a></li>
 					<li><a id="end"  class="btn btn-danger" href="">End current game</a></li>
 				</ul>
 				<div id="instructions">
+					<h3>Instructions</h3>
 					<p>The main objective is to hit as many obstacles as possible in order to slow your vehicle down and avoid imminent death!</p>
 					<p>Player 1 uses "a" and "d" to steer his/her vehicle. Player 2 uses "&#8592;" and "&#8594;" to steer his/her vehicle.</p>
+					<ul class="list-unstyled">
+						<li><a class="backLink btn btn-default">Back</a></li>
+					</ul>
 				</div>
 				<div id="options">
+					<h3>Options</h3>
 					<form>
 						<formset>
 							<div class="field">
 								<label for="mute">
-									<input id="mute" type="checkbox" checked/>
-									Mute the goddamn awesome mario kart music, this is not 1999!
+									<input id="mute" type="checkbox" >
+									Awesome mode <sup><small>please don't sue us<small></sup>
 								</label>
 							</div>
 						</formset>
 					</form>
+					<ul class="list-unstyled">
+						<li><a class="backLink btn btn-default">Back</a></li>
+					</ul>
 				</div>
 			</div>
 		</div>
