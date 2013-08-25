@@ -193,6 +193,7 @@
 					this.resetRoadLines(this.data);
 					this.data = getTrackData(this.defaults);
 					this.resetObstacles();
+					this.generateObstacles(this.data);
 				}
 				
 				Track.prototype.destroyView = function() {
@@ -310,7 +311,9 @@
                 }
 				
 				function resetObstacles(data) {
-					console.log('reset obstacles');
+					for (var i = 0; i < obstacleCache.length; i++) {
+						var obstacle = obstacleCache[i].remove();
+					}
 				}
                 
                 window.Track.prototype.generateObstacles = generateObstacles;
@@ -466,7 +469,6 @@
 					};
 					
 					self.reset = function() {
-						console.log('reset car position');
 						var initialPosition = new Point(self.x + 50, self.y);
 						self.raster.position = initialPosition;
 						self.velocity = self.initialVelocity;
