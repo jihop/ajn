@@ -318,7 +318,7 @@
             (function() {
                 function Player(x, y, color, scoreEl) {
                     var self = this;
-                    //var racecar = new Rectangle(x, y, 100, 100);
+					// +50 to compensate for raster weirdness
                     var carPosition = new Point(x + 50, y),
 						racecar = new Raster(color, carPosition),
 						initialVelocity = new Point(0,-15);
@@ -332,15 +332,41 @@
 
                     self.shape = racecar;
                     self.velocity = initialVelocity;
+					self.spacesMovedX = 0;
+					self.turningVector = 0;
+					self.maxTurningVector = 10;
 					
                     self.moveForward = function(tickDuration) {
                         if(!tickDuration) {
                             var tickDuration = 18;
                         }
+						console.log('turning vector ' + self.turningVector);
+						//adjust towards the turning vector each frame by 1/10 of the vector
+						if(Math.abs(self.velocity.x) <= self.maxTurningVector &&
+							Math.abs(self.velocity.x) < Math.abs(self.turningVector)) {
+							console.log('adjusting');
+							self.velocity.x += self.turningVector / 10;
+						} else if(self.velocity.x !== 0){
+							//return to center
+							if (self.velocity.x < 0) {
+								self.velocity.x += self.maxTurningVector / 10;
+							} else {
+								self.velocity.x -= self.maxTurningVector / 10;
+							}
+						}
 						// normalize velocity
                         self.raster.position += self.velocity * tickDuration / 18;
                         self.currentDistance = self.initialPositionY - self.raster.position.y;
                     };
+					self.moveLeft = function() {
+						self.turningVector = -10; 
+					};
+					self.moveRight = function() {
+						self.turningVector = 10; 
+					};
+					self.moveCenter = function() {
+						self.turningVector = 0; 
+					};
                     self.collideWith = function(obstacle) {
                         if (obstacle) {
                             var collisionVelocity = new Point(0,5);
@@ -407,29 +433,40 @@
                 game.camera.unblockZoom();
                 switch(e.key) {
                     case "left":
-                        // player2 goes left;
-                        var xPos = game.player2.raster.position.getX() - 100;
-                        game.player2.raster.position.setX(xPos);
+			game.player2.moveLeft();
                         return false;
                         break;
                     case "right":
-                        // player2 goes right;
-                        var xPos = game.player2.raster.position.getX() + 100;
-                        game.player2.raster.position.setX(xPos);
+			game.player2.moveRight();
                         return false;
                         break;
                     case "a":
                         // player1 goes left;
-                        var xPos = game.player1.raster.position.getX() - 100;
-                        game.player1.raster.position.setX(xPos);
+			game.player1.moveLeft();
+                        return false;
                         break;
                     case "d":
                         // player1 goes right;
-                        var xPos = game.player1.raster.position.getX() + 100;
-                        game.player1.raster.position.setX(xPos);
+			game.player1.moveRight();
+                        return false;
                         break;
                 }
             }
+
+            function onKeyUp(e) {
+                switch(e.key) {
+                    case "left":
+                    case "right":
+			game.player2.moveCenter();
+                        return false;
+                        break;
+                    case "a":
+                    case "d":
+			game.player1.moveCenter();
+                        return false;
+                        break;
+                }
+	    }
             
             document.getElementById("start").onclick = function() {
                 game.initialize();
