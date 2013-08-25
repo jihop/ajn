@@ -266,10 +266,11 @@
                 function Player(x, y, color, initialVelocity) {
                     var self = this;
                     //var racecar = new Rectangle(x, y, 100, 100);
+		    // +50 to compensate for raster weirdness
                     var carPosition = new Point(x+50, y),
-						racecar = new Raster(color, carPosition);
-					
-					self.raster = racecar;
+		    racecar = new Raster(color, carPosition);
+
+		    self.raster = racecar;
                     self.initialPositionX = x;
                     self.initialPositionY = y;
                     self.currentLane = 0;
