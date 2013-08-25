@@ -396,13 +396,16 @@
 				// game.end(); or game.endRace();
 				return false;
 			};
-			document.getElementById("mute").onclick = function() {
-				if (this.checked) {
+			var muteButton = document.getElementById("mute");
+			muteButton.onclick = muteGame();
+			function muteGame() {			
+				if (muteButton.checked) {
 					game.mute(true);
 				} else {
 					game.mute(false);
 				}
 			}
+			
             if (autoStartGame) {
                 game.initialize();
             }
@@ -413,6 +416,9 @@
                 margin: 0;
                 padding: 0;
             }
+			img {
+				display: none;
+			}
             #canvasWrapper {
                 margin: 0 auto;
                 width: 502px;
@@ -432,9 +438,9 @@
 		<p style="position: absolute; right: 20px; top: 20px;">fps: <span id="fps"></span></p>
 		<p id="clock"></p>
         <div id="canvasWrapper"><canvas id="myCanvas" width="500" height="600"></canvas></div>
-        <img src="images/road_line2.gif" id="roadLine" style="display:none;" />
-        <img src="images/redcar.gif" id="redcar" style="display:none;" />
-		<img src="images/yellowcar.gif" id="yellowcar" style="display:none;" />
+        <img src="images/road_line2.gif" id="roadLine" />
+        <img src="images/redcar.gif" id="redcar" />
+		<img src="images/yellowcar.gif" id="yellowcar" />
 		
         <div id="gameMenu">
             <a id="start" href="">Start new game</a>
@@ -442,7 +448,7 @@
 			<form>
 				<formset>
 					<label for="mute">
-						<input id="mute" type="checkbox" />
+						<input id="mute" type="checkbox" checked/>
 						Mute the goddamn awesome mario kart music, this is not 1999!
 					</label>
 				</formset>
