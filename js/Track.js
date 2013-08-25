@@ -14,19 +14,15 @@ function getTrackData(trackConfig) {
         }
 
         // Randomly Generated Segments
-        for (var i=trackConfig["NumberOfInitialOpenSegments"]; i<trackConfig["NumberOfSegments"]-1; i++) {
+        for (var i=trackConfig["NumberOfInitialOpenSegments"]; i<trackConfig["NumberOfSegments"]; i++) {
 
             var tmpSegment = generateRandomSegment(trackConfig["NumberOfLanes"], trackConfig["ObstacleFrequency"]);
             returnSegments.push(tmpSegment);
         }
 
-<<<<<<< HEAD
-        returnSegments.push(generateBlockageSegment(trackConfig["NumberOfLanes"]));
-=======
         for (var i=0; i<10; i++) {
             returnSegments.push(generateFinishlineSegment(trackConfig["NumberOfLanes"]));
         }
->>>>>>> master
 
         return returnSegments;
     })();
@@ -46,27 +42,15 @@ function getTrackData(trackConfig) {
         return tmpSegment;
     }
 
-<<<<<<< HEAD
-    function generateBlockageSegment (numberOfLanes) {
-
-        var tmpSegment = new Array();
-        for (var j=0; j<numberOfLanes; j++) {
-            tmpSegment.push(1);
-=======
     function generateFinishlineSegment (numberOfLanes) {
 
         var tmpSegment = new Array();
         for (var i=0; i<numberOfLanes; i++) {
             tmpSegment.push(-1);
->>>>>>> master
         }
 
         return tmpSegment;
     }
-<<<<<<< HEAD
-
-=======
->>>>>>> master
 	return segments;
 }
 

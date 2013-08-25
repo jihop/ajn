@@ -21,10 +21,9 @@
 					this.menu = document.getElementById("gameMenu");
 					this.hideMenu();
 					this.clock = new Clock();
-					var intitialVelocity = new Point(0,-15);
 					this.playerLayer = project.activeLayer;
-					this.player1 = new Player(300, 0, "redcar", intitialVelocity);
-                    this.player2 = new Player(200, 0, "yellowcar", intitialVelocity);
+					this.player1 = new Player(300, 0, "redcar", document.getElementById("score1"));
+                    this.player2 = new Player(200, 0, "yellowcar", document.getElementById("score2"));
                 };
 				
 				GameController.prototype.start = function() {
@@ -36,21 +35,12 @@
 					// and don't report position or rect correctly
                     this.camera = new Camera(this.track.baseRaster.position, this.track.baseRaster.bounds, 500);
                     this.active = true;
-<<<<<<< HEAD
-				}
-
-                GameController.prototype.pause = function() {
-
-                }
-=======
 				};
->>>>>>> master
 
-                GameController.prototype.end = function() {
+                GameController.prototype.end = function(winner) {
+					winner.increaseScore();
                     this.active = false;
                 }
-<<<<<<< HEAD
-=======
 				
 				GameController.prototype.mute = function(mute) {
 					this.muted = mute;
@@ -62,7 +52,6 @@
 				GameController.prototype.hideMenu = function() {
 					this.menu.style.display = "none";
 				};
->>>>>>> master
 				
                 game = new GameController();
             })();
@@ -140,7 +129,6 @@
             (function() {
                 function Track() {
                     this.data = getTrackData(this.defaults);
-                    console.log(this.data);
                     this.createView();
                 }
                 
@@ -221,21 +209,13 @@
                     }),
                     obstacleSymbol = new Symbol(baseObstacle);
 
-<<<<<<< HEAD
-                var blockageObstacle = new Path.Circle({
-=======
                 var finishlineBlock = new Path.Circle({
->>>>>>> master
                         center: [0, 0],
                         radius: 25,
                         fillColor: "red",
                         strokeColor: "yellow"
                     }),
-<<<<<<< HEAD
-                    blockageObstacleSymbol = new Symbol(blockageObstacle);
-=======
                     finishlineBlockSymbol = new Symbol(finishlineBlock);
->>>>>>> master
                 
                 function createObstacle(x, y) {
                     var point = new Point(x + 50, -y),
@@ -244,19 +224,11 @@
                     return placedObstacle;
                 }
 
-<<<<<<< HEAD
-                function createBlockage(x, y) {
-                    var point = new Point(x + 50, -y),
-                        placedBlockage = blockageObstacleSymbol.place(point);
-                    
-                    return placedBlockage;
-=======
                 function createFinishlineBlock(x,y) {
                     var point = new Point(x + 50, -y),
                         placedObstacle = finishlineBlockSymbol.place(point);
                     
                     return placedObstacle;
->>>>>>> master
                 }
                 
                 function generateObstacles(data) {
@@ -269,13 +241,8 @@
                             switch (row[x]) {
                                 case 0: // No Obstacle
                                     break;
-<<<<<<< HEAD
-                                case 1:
-                                    row[x] = createBlockage(x * columnWidth, y * rowHeight);
-=======
                                 case -1:
                                     row[x] = createFinishlineBlock(x * columnWidth, y * rowHeight);
->>>>>>> master
                                     break;
                                 default: // Obstacle
                                     row[x] = createObstacle(x * columnWidth, y * rowHeight);
@@ -284,7 +251,7 @@
                         }
                     }
                 }
-
+                
                 window.Track.prototype.generateObstacles = generateObstacles;
             })();
             ////////// END OBSTACLES //////////
@@ -349,55 +316,57 @@
 
             ////////// START PLAYER //////////
             (function() {
-                function Player(x, y, color, initialVelocity) {
+                function Player(x, y, color, scoreEl) {
                     var self = this;
-                    //var racecar = new Rectangle(x, y, 100, 100);
-		    // +50 to compensate for raster weirdness
-                    var carPosition = new Point(x+50, y),
-		    racecar = new Raster(color, carPosition);
-
-		    self.raster = racecar;
+					// +50 to compensate for raster weirdness
+                    var carPosition = new Point(x + 50, y),
+						racecar = new Raster(color, carPosition),
+						initialVelocity = new Point(0,-15);
+					
+					self.raster = racecar;
                     self.initialPositionX = x;
                     self.initialPositionY = y;
                     self.currentLane = 0;
+					self.score = 0;
+					self.scoreEl = scoreEl;
 
                     self.shape = racecar;
                     self.velocity = initialVelocity;
-		    self.spacesMovedX = 0;
-		    self.turningVector = 0;
-		    self.maxTurningVector = 10;
+					self.spacesMovedX = 0;
+					self.turningVector = 0;
+					self.maxTurningVector = 10;
 					
                     self.moveForward = function(tickDuration) {
                         if(!tickDuration) {
                             var tickDuration = 18;
                         }
-console.log('turning vector ' + self.turningVector);
-			//adjust towards the turning vector each frame by 1/10 of the vector
-			if(Math.abs(self.velocity.x) <= self.maxTurningVector &&
-			   Math.abs(self.velocity.x) < Math.abs(self.turningVector)) {
-console.log('adjusting');
-				self.velocity.x += self.turningVector / 10;
-			} else if(self.velocity.x !== 0){
-				//return to center
-				if (self.velocity.x < 0) {
-					self.velocity.x += self.maxTurningVector / 10;
-				} else {
-					self.velocity.x -= self.maxTurningVector / 10;
-				}
-			}
-			// normalize velocity
+						console.log('turning vector ' + self.turningVector);
+						//adjust towards the turning vector each frame by 1/10 of the vector
+						if(Math.abs(self.velocity.x) <= self.maxTurningVector &&
+							Math.abs(self.velocity.x) < Math.abs(self.turningVector)) {
+							console.log('adjusting');
+							self.velocity.x += self.turningVector / 10;
+						} else if(self.velocity.x !== 0){
+							//return to center
+							if (self.velocity.x < 0) {
+								self.velocity.x += self.maxTurningVector / 10;
+							} else {
+								self.velocity.x -= self.maxTurningVector / 10;
+							}
+						}
+						// normalize velocity
                         self.raster.position += self.velocity * tickDuration / 18;
                         self.currentDistance = self.initialPositionY - self.raster.position.y;
-                    }
-		    self.moveLeft = function() {
-			self.turningVector = -10; 
-		    }
-		    self.moveRight = function() {
-			self.turningVector = 10; 
-		    }
-		    self.moveCenter = function() {
-			self.turningVector = 0; 
-		    }
+                    };
+					self.moveLeft = function() {
+						self.turningVector = -10; 
+					};
+					self.moveRight = function() {
+						self.turningVector = 10; 
+					};
+					self.moveCenter = function() {
+						self.turningVector = 0; 
+					};
                     self.collideWith = function(obstacle) {
                         if (obstacle) {
                             var collisionVelocity = new Point(0,5);
@@ -406,13 +375,17 @@ console.log('adjusting');
                                 self.velocity -= collisionVelocity // Restore to normal velocity
                             },200);
                         }
-                    }
+                    };
                     self.currentSegmentIndex = function () {
                         return Math.round(self.currentDistance / config_SegmentDistancePixels);
-                    }
+                    };
                     self.currentLaneIndex = function () {
                         return Math.floor(self.raster.position.x / config_LaneWidthPixels);
-                    }
+                    };
+					self.increaseScore = function() {
+						self.score++;
+						self.scoreEl.innerHTML = self.score; 
+					};
 
                     return this;
                 }
@@ -434,23 +407,19 @@ console.log('adjusting');
                     game.player1.moveForward(delta);
                     game.player2.moveForward(delta);
 
-<<<<<<< HEAD
-                    (game.track.popObstacle(game.player1.currentSegmentIndex(), game.player1.currentLaneIndex()));
-=======
                     var player1SegmentIndex = game.player1.currentSegmentIndex();
                     var player2SegmentIndex = game.player2.currentSegmentIndex();
 
                     console.log(game.track.data.length);
                     if (player1SegmentIndex == game.track.data.length - 10) {
                         alert("Player 1.. LOST!");
-                        game.end();
+                        game.end(game.player2);
                     }
 
                     if (player2SegmentIndex == game.track.data.length - 10) {
                         alert("Player 2.. LOST!");
-                        game.end();
+                        game.end(game.player1);
                     }
->>>>>>> master
 
                     game.player1.collideWith(game.track.popObstacle(game.player1.currentSegmentIndex(), game.player1.currentLaneIndex()));
                     game.player2.collideWith(game.track.popObstacle(game.player2.currentSegmentIndex(), game.player2.currentLaneIndex()));
