@@ -58,7 +58,7 @@
 				};
 				GameController.prototype.showMenu = function(winner) {
 					this.winnerName.innerHTML = winner.name;
-					this.menu.style.display = "block";
+					this.menu.style.display = "visible";
 				};
 				
                 game = new GameController();
@@ -477,23 +477,64 @@
                 }
 	    }
             
-            document.getElementById("start").onclick = function() {
-                game.initialize();
-                return false;
-            };
-			document.getElementById("end").onclick = function() {
-				// game.end(); or game.endRace();
-				return false;
-			};
-			var muteButton = document.getElementById("mute");
-			muteButton.onclick = muteGame();
-			function muteGame() {			
-				if (muteButton.checked) {
-					game.mute(true);
-				} else {
-					game.mute(false);
+			
+			////////// START GAME MENU //////////
+			(function() {
+				var gameControls = document.getElementById("gameControls");
+				
+				document.getElementById("start").onclick = function() {
+					game.initialize();
+					return false;
+				};
+				document.getElementById("instructionsLink").onclick = function() {
+					hideGameControls();
+					showSubMenu(this);
+					return false;
+				};
+				document.getElementById("optionsLink").onclick = function() {
+					hideGameControls();
+					showSubMenu(this);
+					return false;
+				};
+				var backLinks = document.getElementsByClassName("backLink");
+				for (var i = 0; i < backLinks.length; i++) {
+					backLinks[i].onclick = function() {
+						showGameControls();
+						hideSubMenu(this);
+						return false;
+					}
 				}
-			}
+				function showGameControls() {
+					gameControls.style.display = "block";
+				}
+				function hideGameControls() {
+					gameControls.style.display = "none";
+				}
+				function showSubMenu(button) {
+					var id = button.href.split("#")[1],
+						subMenu = document.getElementById(id);
+						
+					subMenu.style.display = "block";
+				}
+				function hideSubMenu(button) {
+					var subMenu = button.parentNode.parentNode.parentNode;
+					subMenu.style.display = "none";
+				}
+				document.getElementById("end").onclick = function() {
+					// game.end(); or game.endRace();
+					return false;
+				};
+				var muteButton = document.getElementById("mute");
+				muteButton.onclick = muteGame();
+				function muteGame() {			
+					if (muteButton.checked) {
+						game.mute(true);
+					} else {
+						game.mute(false);
+					}
+				}
+			})();
+			////////// END GAME MENU //////////
 			
             if (autoStartGame) {
                 game.initialize();
@@ -507,7 +548,7 @@
                 padding: 0;
             }
 			img,
-			#instructions,
+			#instructions, 
 			#options {
 				display: none;
 			}
@@ -526,13 +567,22 @@
 				position: absolute;
 				top: 0;
 				left: 0;
-				text-align: center;
-				padding: 100px 0;
+				padding: 100px;
 			}
 			#gameMenu li {
 				margin-bottom: 20px;
 			}
+			#gameMenu li,
+			#gameMenu a {
+				text-align: center;
+			}
 			#gameMenu h2 {
+				visibility: hidden;
+				text-align: center;
+			}
+			#gameMenu h2,
+			#instructions, 
+			#options {
 				color: #ccc;
 			}
             #myCanvas {
@@ -555,17 +605,22 @@
 			<canvas id="myCanvas" width="500" height="600"></canvas>
 			<div id="gameMenu">
 				<h2><span id="winnername"></span> has survived!!!</h2>
-				<ul class="list-unstyled">
+				<ul id="gameControls" class="list-unstyled">
 					<li><a id="start" class="btn btn-primary btn-lg" href="">Start</a></li>
 					<li><a id="instructionsLink" class="btn btn-default" href="#instructions">Instructions</a></li>
 					<li><a id="optionsLink" class="btn btn-default" href="#options">Options</a></li>
 					<li><a id="end"  class="btn btn-danger" href="">End current game</a></li>
 				</ul>
 				<div id="instructions">
+					<h3>Instructions</h3>
 					<p>The main objective is to hit as many obstacles as possible in order to slow your vehicle down and avoid imminent death!</p>
 					<p>Player 1 uses "a" and "d" to steer his/her vehicle. Player 2 uses "&#8592;" and "&#8594;" to steer his/her vehicle.</p>
+					<ul class="list-unstyled">
+						<li><a class="backLink btn btn-default">Back</a></li>
+					</ul>
 				</div>
 				<div id="options">
+					<h3>Options</h3>
 					<form>
 						<formset>
 							<div class="field">
@@ -576,6 +631,9 @@
 							</div>
 						</formset>
 					</form>
+					<ul class="list-unstyled">
+						<li><a class="backLink btn btn-default">Back</a></li>
+					</ul>
 				</div>
 			</div>
 		</div>
