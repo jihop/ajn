@@ -20,15 +20,22 @@
                 console.log('show game menu');
                 };
                 
-                GameController.prototype.start = function() {
-                    console.log('start game');
-                    this.track = new Track();
-                    
-                    this.camera = new Camera(this.track.baseRaster.position, this.track.baseRaster.bounds);
-                    this.player1 = new Player(100, 0, "green", new Point(0,-15));
-                    this.player2 = new Player(200, 0, "blue", new Point(0,-15));
-                    this.active = true;
+                GameController.prototype.initialize = function() {
+					this.clock = new Clock();
+					var intitialVelocity = new Point(0,-15);
+					this.playerLayer = project.activeLayer;
+					this.player1 = new Player(100, 0, "green", intitialVelocity);
+                    this.player2 = new Player(200, 0, "blue", intitialVelocity);
                 }
+				
+				GameController.prototype.start = function() {
+					this.track = new Track();
+					this.player1.path.bringToFront();
+					this.player2.path.bringToFront();
+                    this.camera = new Camera(this.track.baseRaster.position, this.track.baseRaster.bounds);
+                    this.active = true;
+				}
+				
                 game = new GameController();
             })();
             ////////// END GAME CONTROLLER //////////
@@ -60,12 +67,11 @@
 						this.el.innerHTML = this.defaults.startingSeconds;
 					} else {
 						this.el.innerHTML = this.defaults.startText;
+						game.start();
 						clearInterval(this.timer);
 					}
 					this.defaults.startingSeconds--;
 				}
-				// debug Clock
-				new Clock();
 				
 				window.Clock = Clock;
 			})();
@@ -92,8 +98,48 @@
                 window.Track = Track;
             })();
             ////////// END TRACK GENERATION //////////
+			
+            ////////// START ROAD LINES //////////
+            (function() {
+                var numberOfRoadRasters = 10,
+                    roadRasterHeight = 200,
+                    // calculate combined height to reposition line during onFrame callback
+                    combinedRoadLineHeight = numberOfRoadRasters * roadRasterHeight,
+                    // first road line is at bottom of view
+                    roadLinePosition = new Point(0, view.bounds.height - roadRasterHeight / 2),
+                    baseRoadLine = new Raster("roadLine", roadLinePosition),
+                    roadLineSymbol = new Symbol(baseRoadLine);
+                
+                function checkRoadLine(item) {
+                    if (view.bounds.y + view.bounds.height < item.bounds.y) {
+                        item.position.y -= combinedRoadLineHeight;
+                    }
+                }
+                
+                function createRoadLine(i) {
+                    var point = roadLinePosition;
+                    // subsequent lines are positioned above the previous line
+                    point.y -= roadRasterHeight;
+                    var placedRoadLine = roadLineSymbol.place(point);
+                    placedRoadLine.onFrame = function(e) {
+                        checkRoadLine(this);
+                    }
+                }
+                
+                function generateRoadLines() {
+                    for (var i = 0; i < numberOfRoadRasters; i++) {
+                        createRoadLine(i);
+                    }
+					//game.obstacleLayer = new Layer();
+                    return baseRoadLine;
+                }
+                
+                window.Track.prototype.generateRoadLines = generateRoadLines;
+            })();
+            ////////// END ROAD LINES //////////
             
-            ////////// START OBSTACLES //////////
+			
+			////////// START OBSTACLES //////////
             (function() {
                 var baseObstacle = new Path.Circle({
                         center: [0, 0],
@@ -131,46 +177,7 @@
                 window.Track.prototype.generateObstacles = generateObstacles;
             })();
             ////////// END OBSTACLES //////////
-            
-            
-            ////////// START ROAD LINES //////////
-            (function() {
-                var numberOfRoadRasters = 10,
-                    roadRasterHeight = 200,
-                    // calculate combined height to reposition line during onFrame callback
-                    combinedRoadLineHeight = numberOfRoadRasters * roadRasterHeight,
-                    // first road line is at bottom of view
-                    roadLinePosition = new Point(0, view.bounds.height - roadRasterHeight / 2),
-                    baseRoadLine = new Raster("roadLine", roadLinePosition),
-                    roadLineSymbol = new Symbol(baseRoadLine);
-                
-                function checkRoadLine(item) {
-                    if (view.bounds.y + view.bounds.height < item.bounds.y) {
-                        item.position.y -= combinedRoadLineHeight;
-                    }
-                }
-                
-                function createRoadLine(i) {
-                    var point = roadLinePosition;
-                    // subsequent lines are positioned above the previous line
-                    point.y -= roadRasterHeight;
-                    var placedRoadLine = roadLineSymbol.place(point);
-                    placedRoadLine.onFrame = function(e) {
-                        checkRoadLine(this);
-                    }
-                }
-                
-                function generateRoadLines() {
-                    for (var i = 0; i < numberOfRoadRasters; i++) {
-                        createRoadLine(i);
-                    }
-                    return baseRoadLine;
-                }
-                
-                window.Track.prototype.generateRoadLines = generateRoadLines;
-            })();
-            ////////// END ROAD LINES //////////
-            
+			
             
             ////////// START CAMERA //////////
             // Singleton
@@ -347,11 +354,11 @@
             }
             
             document.getElementById("start").onclick = function() {
-                game.start();
+                game.initialize();
                 return false;
             }
             if (autoStartGame) {
-                game.start();
+                game.initialize();
             }
         </script>
         <style>
