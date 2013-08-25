@@ -9,7 +9,6 @@
         <script type="text/paperscript" canvas="myCanvas">
 
 			////////// START GAME CONTROLLER //////////
-			
 			var game,
 				autoStartGame = false; // for quick debuggin
 			
@@ -21,16 +20,56 @@
 				
 				GameController.prototype.start = function() {
 					console.log('start game');
+					this.initialVelocity = new Point(0, -15);
 					this.track = new Track();
 					this.camera = new Camera();
-					this.player1 = new Player(100, 500, "green", new Point(0,-15));
-					this.player2 = new Player(200, 500, "blue", new Point(0,-15));
+					this.player1 = new Player(100, 500, "green", this.initialVelocity);
+					this.player2 = new Player(200, 500, "blue", this.initialVelocity);
 					this.active = true;
+					this.clock = new Clock();
 				}
 				game = new GameController();
 			})();
-
 			////////// END GAME CONTROLLER //////////
+			
+			////////// START CLOCK //////////
+			(function() {
+				function Clock() {
+					this.el = document.getElementById("clock");
+					this.timer = this.startCountdown(this.el);
+				}
+				
+				Clock.prototype.defaults = {
+					"startingSeconds": 3,
+					"startText": "GO!",
+					"raceSeconds": 10
+				}
+				
+				Clock.prototype.startCountdown = function() {
+					var self = this;
+					return setInterval(function() {
+						self.tick();
+					}, 1000);
+				}
+				
+				Clock.prototype.tick = function() {
+					if (this.defaults.startingSeconds > -1) {
+						console.log('starting seconds: ' + this.defaults.startingSeconds);
+						console.log(this.el);
+						this.el.innerHTML = this.defaults.startingSeconds;
+					} else {
+						this.el.innerHTML = this.defaults.startText;
+						clearInterval(this.timer);
+					}
+					this.defaults.startingSeconds--;
+				}
+				// debug Clock
+				new Clock();
+				
+				window.Clock = Clock;
+			})();
+			////////// END CLOCK //////////
+			
 			
 			////////// START TRACK GENERATION //////////
 			(function() {
@@ -52,12 +91,10 @@
 				};
 				window.Track = Track;
 			})();
-			
             ////////// END TRACK GENERATION //////////
 			
 			
 			////////// START OBSTACLES //////////
-			
 			(function() {
 				var baseObstacle = new Path.Circle({
 						center: [0, 0],
@@ -94,7 +131,6 @@
 				
 				window.Track.prototype.generateObstacles = generateObstacles;
 			})();
-			
 			////////// END OBSTACLES //////////
 			
 			
@@ -133,7 +169,6 @@
 				
 				window.Track.prototype.generateRoadLines = generateRoadLines;
 			})();
-			
 			////////// END ROAD LINES //////////
 			
 			
@@ -176,11 +211,9 @@
 				}
 				window.Camera = Camera;
 			})();
-			
 			////////// END CAMERA //////////
 
 			////////// START PLAYER //////////
-			
 			(function() {
 				function Player(x, y, color, initialVelocity) {
 					var self = this;
@@ -211,7 +244,6 @@
 			})();
 			
 			////////// END PLAYER //////////
-			
             var time1;
             function onFrame(event) {
                 if (!time1) {
@@ -285,11 +317,16 @@
 				border: 1px solid black;
 				background: green;
             }
+			#clock {
+				float: left;
+				font-size: 50px;
+			}
         </style>
     </head>
     <body>
 		<h1>Ten 2nd's</h1>
-		<p>fps: <span id="fps"></span></p>
+		<p style="position: absolute; right: 20px; top: 20px;">fps: <span id="fps"></span></p>
+		<p id="clock">3</p>
         <div id="canvasWrapper"><canvas id="myCanvas" width="500" height="600"></canvas></div>
 		<img src="images/road_line2.gif" id="roadLine" style="display:none;" />
 		
