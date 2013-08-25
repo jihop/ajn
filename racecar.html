@@ -369,55 +369,60 @@
                     var self = this;
 					// +50 to compensate for raster weirdness
                     var carPosition = new Point(x + 50, y),
-						racecar = new Raster(imgName, carPosition),
 						initialVelocity = new Point(0,-15);
 					
 					self.name = name;
 					self.x = x;
 					self.y = y;
 					self.initialVelocity = initialVelocity;
-					self.raster = racecar;
-                    self.currentLane = 0;
-					self.score = 0;
-					self.scoreEl = scoreEl;
 
-                    self.shape = racecar;
-                    self.velocity = initialVelocity;
-					self.spacesMovedX = 0;
-					self.turningVector = 0;
-					self.maxTurningVector = 10;
-					
-                    self.moveForward = function(tickDuration) {
+                    self.raster = new Raster(imgName, carPosition);
+                    self.currentLane = 0;
+                    self.score = 0;
+                    self.scoreEl = scoreEl;
+                    self.name = name;
+
+                    self.velocity = new Point(self.initialVelocity);
+                    self.spacesMovedX = 0;
+                    self.turningVector = 0;
+                    self.maxTurningVector = 10;
+
+                    this.moveForward = function(tickDuration, player) {
                         if(!tickDuration) {
                             var tickDuration = 18;
                         }
-						console.log('turning vector ' + self.turningVector);
-						//adjust towards the turning vector each frame by 1/10 of the vector
-						if(Math.abs(self.velocity.x) <= self.maxTurningVector &&
-							Math.abs(self.velocity.x) < Math.abs(self.turningVector)) {
-							console.log('adjusting');
-							self.velocity.x += self.turningVector / 10;
-						} else if(self.velocity.x !== 0){
-							//return to center
-							if (self.velocity.x < 0) {
-								self.velocity.x += self.maxTurningVector / 10;
-							} else {
-								self.velocity.x -= self.maxTurningVector / 10;
-							}
-						}
-						// normalize velocity
+
+                        //adjust towards the turning vector each frame by 1/10 of the vector
+                        if(self.turningVector !== 0) {
+                            if(Math.abs(self.velocity.x) < self.maxTurningVector) {
+                                self.velocity.x += self.turningVector / 10;
+                                self.raster.rotate(self.turningVector / 5);
+                            }
+                        } else {
+                            //return to center
+                            if (self.velocity.x < 0) {
+                                self.velocity.x += self.maxTurningVector / 10;
+                                self.raster.rotate(self.maxTurningVector / 5);
+                            } else if (self.velocity.x > 0) {
+                                self.velocity.x -= self.maxTurningVector / 10;
+                                self.raster.rotate(-self.maxTurningVector / 5);
+                            }
+                        }
+                        // rotate raster to current velocity
+
+                        // normalize velocity
                         self.raster.position += self.velocity * tickDuration / 18;
                         self.currentDistance = self.y - self.raster.position.y;
                     };
-					self.moveLeft = function() {
-						self.turningVector = -10; 
-					};
-					self.moveRight = function() {
-						self.turningVector = 10; 
-					};
-					self.moveCenter = function() {
-						self.turningVector = 0; 
-					};
+                    self.moveLeft = function() {
+                        self.turningVector = -10; 
+                    };
+                    self.moveRight = function() {
+                        self.turningVector = 10; 
+                    };
+                    self.moveCenter = function() {
+                        self.turningVector = 0; 
+                    };
                     self.collideWith = function(obstacle) {
                         if (obstacle) {
                             var collisionVelocity = new Point(0,5);
@@ -462,13 +467,14 @@
                 document.getElementById("fps").innerHTML = Math.ceil(1/(delta/1000));
                 
                 if (game.active) {
+                    resolveInput();
                     game.player1.moveForward(delta);
                     game.player2.moveForward(delta);
 
                     var player1SegmentIndex = game.player1.currentSegmentIndex();
                     var player2SegmentIndex = game.player2.currentSegmentIndex();
 
-                    console.log(game.track.data.length);
+                    //console.log(game.track.data.length);
                     if (player1SegmentIndex == game.track.data.length - 10) {
                         alert("Player 1.. LOST!");
                         game.end(game.player2);
@@ -486,45 +492,28 @@
                 }
             }
             
-            function onKeyDown(e) {
-                // Allow zooming again if a key is pressed
-                game.camera.unblockZoom();
-                switch(e.key) {
-                    case "left":
-			game.player2.moveLeft();
-                        return false;
-                        break;
-                    case "right":
-			game.player2.moveRight();
-                        return false;
-                        break;
-                    case "a":
-                        // player1 goes left;
-			game.player1.moveLeft();
-                        return false;
-                        break;
-                    case "d":
-                        // player1 goes right;
-			game.player1.moveRight();
-                        return false;
-                        break;
-                }
-            }
+            function resolveInput() {
+                    //control inputs
+                    if(Key.isDown('a') && Key.isDown('d')) {
+                        game.player1.moveCenter();
+                    } else if(Key.isDown('a')) {
+                        game.player1.moveLeft();
+                    } else if(Key.isDown('d')) {
+                        game.player1.moveRight();
+                    } else {
+                        game.player1.moveCenter();
+                    }
+                    if(Key.isDown('left') && Key.isDown('right')) {
+                        game.player2.moveCenter();
+                    } else if(Key.isDown('left')) {
+                        game.player2.moveLeft();
+                    } else if(Key.isDown('right')) {
+                        game.player2.moveRight();
+                    } else {
+                        game.player2.moveCenter();
+                    }
+             }
 
-            function onKeyUp(e) {
-                switch(e.key) {
-                    case "left":
-                    case "right":
-			game.player2.moveCenter();
-                        return false;
-                        break;
-                    case "a":
-                    case "d":
-			game.player1.moveCenter();
-                        return false;
-                        break;
-                }
-	    }
             
 			
 			////////// START GAME MENU //////////
