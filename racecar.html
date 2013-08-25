@@ -35,6 +35,8 @@
             function createObstacle(x, y) {
                 var point = new Point(x + 50, -y),
 					placedObstacle = obstacleSymbol.place(point);
+				
+				return placedObstacle;
             }
 			
 			function generateObstacles(data) {
@@ -48,7 +50,7 @@
                             case 0: // No Obstacle
                                 break;
                             default: // Obstacle
-                                createObstacle(x * columnWidth, y * rowHeight);
+                                row[x] = createObstacle(x * columnWidth, y * rowHeight);
                                 break;
                         }
                     }
@@ -56,6 +58,7 @@
             }
 			
 			generateObstacles(mySegments);
+			console.log(mySegments);
 			
 			////////// END OBSTACLES //////////
 			
@@ -193,11 +196,13 @@
 						// player2 goes left;
 						var xPos = player2.path.position.getX() - 100;
 						player2.path.position.setX(xPos);
+						return false;
 						break;
 					case "right":
 						// player2 goes right;
 						var xPos = player2.path.position.getX() + 100;
 						player2.path.position.setX(xPos);
+						return false;
 						break;
 					case "a":
 						// player1 goes left;
