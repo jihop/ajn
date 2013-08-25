@@ -35,6 +35,14 @@
                     this.camera = new Camera(this.track.baseRaster.position, this.track.baseRaster.bounds);
                     this.active = true;
 				}
+
+                GameController.prototype.pause = function() {
+
+                }
+
+                GameController.prototype.end = function() {
+                    this.active = false;
+                }
 				
                 game = new GameController();
             })();
@@ -81,6 +89,7 @@
             (function() {
                 function Track() {
                     this.data = getTrackData(this.defaults);
+                    console.log(this.data);
                     this.createView();
                 }
                 
@@ -160,12 +169,27 @@
                         strokeColor: "yellow"
                     }),
                     obstacleSymbol = new Symbol(baseObstacle);
+
+                var blockageObstacle = new Path.Circle({
+                        center: [0, 0],
+                        radius: 25,
+                        fillColor: "red",
+                        strokeColor: "yellow"
+                    }),
+                    blockageObstacleSymbol = new Symbol(blockageObstacle);
                 
                 function createObstacle(x, y) {
                     var point = new Point(x + 50, -y),
                         placedObstacle = obstacleSymbol.place(point);
                     
                     return placedObstacle;
+                }
+
+                function createBlockage(x, y) {
+                    var point = new Point(x + 50, -y),
+                        placedBlockage = blockageObstacleSymbol.place(point);
+                    
+                    return placedBlockage;
                 }
                 
                 function generateObstacles(data) {
@@ -178,6 +202,9 @@
                             switch (row[x]) {
                                 case 0: // No Obstacle
                                     break;
+                                case 1:
+                                    row[x] = createBlockage(x * columnWidth, y * rowHeight);
+                                    break;
                                 default: // Obstacle
                                     row[x] = createObstacle(x * columnWidth, y * rowHeight);
                                     break;
@@ -185,7 +212,7 @@
                         }
                     }
                 }
-                
+
                 window.Track.prototype.generateObstacles = generateObstacles;
             })();
             ////////// END OBSTACLES //////////
@@ -307,6 +334,8 @@
                 if (game.active) {
                     game.player1.moveForward(delta);
                     game.player2.moveForward(delta);
+
+                    (game.track.popObstacle(game.player1.currentSegmentIndex(), game.player1.currentLaneIndex()));
 
                     game.player1.collideWith(game.track.popObstacle(game.player1.currentSegmentIndex(), game.player1.currentLaneIndex()));
                     game.player2.collideWith(game.track.popObstacle(game.player2.currentSegmentIndex(), game.player2.currentLaneIndex()));
