@@ -72,7 +72,8 @@
 				// first road line is at bottom of view
 				roadLinePosition = new Point(0, view.bounds.height - roadRasterHeight / 2),
 				baseRoadLine = new Raster("roadLine", roadLinePosition),
-				roadLineSymbol = new Symbol(baseRoadLine);
+				roadLineSymbol = new Symbol(baseRoadLine),
+				roadRasterWidth = baseRoadLine.getWidth;
 			
 			function checkRoadLine(item) {
 				if (view.bounds.y + view.bounds.height < item.bounds.y) {
@@ -102,40 +103,53 @@
 			
 			
 			////////// START CAMERA //////////
-			
+			// Singleton
 			function Camera() {
-				this.zoomBlocked = false;
-				this.bottomPadding = 100;
+				this.zoomInBlocked = false;
+				this.zoomOutBlocked = false;
+				this.bottomPadding = 200;
 			
 			    this.repositionCamera = function() {
 					var avg = (player1.path.position/2 + player2.path.position/2);
 					avg.y -= view.bounds.height / 4;
-					var viewBottomPadding = new Rectangle(view.bounds.x, view.bounds.y, view.bounds.width, view.bounds.height - this.bottomPadding);
-					while(!(view.bounds.contains(player1.path.bounds) && view.bounds.contains(player2.path.bounds))) {
+					avg.x = this.fixedX;
+					var viewPadding = new Rectangle(view.bounds.x, view.bounds.y, view.bounds.width, view.bounds.height - this.bottomPadding);
+					var intersects = viewPadding.contains(player1.path.bounds) && viewPadding.contains(player2.path.bounds);
+					
+					while(!this.zoomOutBlocked && !(view.bounds.contains(player1.path.bounds) && view.bounds.contains(player2.path.bounds))) {
 						zoomOut();
 					} 
-					if (viewBottomPadding.contains(player1.path.bounds) && viewBottomPadding.contains(player2.path.bounds)) {
+					if (!this.zoomInBlocked && view.zoom <= this.minZoom && intersects) {
 						zoomIn();
 					}
 					
 					view.center = avg;
 				}
 				
-				function blockZoomIn() {
-					this.zoomBlocked = true;
-					setTimeout(function() {this.zoomBlocked = false;}, 700);
+				this.unblockZoom = function() {
+					this.zoomInBlocked = false;
+					this.zoomOutBlocked = false;
 				}
 				
-				function zoomOut() {
+				function zoomOut() {									
 					view.zoom -= .01;
-					blockZoomIn();
+					this.zoomInBlocked = true;
 				}
 				
-				function zoomIn() {
-					if (!this.zoomBlocked) {
-						view.zoom += .01;
-					}
+				function zoomIn() {					
+					view.zoom += .01;
+					this.zoomOutBlocked = true;
 				}
+				// init camera
+				view.center = baseRoadLine.position;
+				while(!view.bounds.contains(baseRoadLine.bounds)) {
+					zoomOut();
+				}
+				this.unblockZoom();
+				this.minZoom = view.zoom;
+				this.fixedX = view.center.x;
+				
+				
 				return this;
 			}
 			var camera = new Camera();
@@ -191,6 +205,8 @@
             }
             
             function onKeyDown(e) {
+				// Allow zooming again if a key is pressed
+				camera.unblockZoom();
                 switch(e.key) {
                     case "left":
 						// player2 goes left;
