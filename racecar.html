@@ -525,12 +525,12 @@
 					return false;
 				};
 				var muteButton = document.getElementById("mute");
-				muteButton.onclick = muteGame();
-				function muteGame() {			
+				muteButton.onclick = muteGame;
+				function muteGame() {
 					if (muteButton.checked) {
-						game.mute(true);
-					} else {
 						game.mute(false);
+					} else {
+						game.mute(true);
 					}
 				}
 			})();
@@ -625,8 +625,8 @@
 						<formset>
 							<div class="field">
 								<label for="mute">
-									<input id="mute" type="checkbox" checked/>
-									Mute the goddamn awesome mario kart music, this is not 1999!
+									<input id="mute" type="checkbox" >
+									Awesome mode <sup><small>please don't sue us<small></sup>
 								</label>
 							</div>
 						</formset>
