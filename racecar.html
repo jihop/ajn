@@ -98,10 +98,10 @@
 				};
 				
 				Clock.prototype.defaults = {
-					"startingTime": 3000,
+					"startingTime": 1000,
 					"countdownInterval": 1000,
 					"startText": "GO!",
-					"raceTime": 10000,
+					"raceTime": 3000,
 					"raceInterval": 100,
 					"textColor": "black",
 					"endColor": "red"
@@ -170,7 +170,7 @@
                 
                 Track.prototype.defaults = {
                     "NumberOfLanes" : 10,
-                    "NumberOfSegments" : 100,
+                    "NumberOfSegments" : 20,
                     "NumberOfInitialOpenSegments" : 5,
                     "ObstacleFrequency" : 0.1
                 };
@@ -195,10 +195,7 @@
 					this.resetRoadLines(this.data);
 					this.data = getTrackData(this.defaults);
 					this.resetObstacles();
-				}
-				
-				Track.prototype.destroyView = function() {
-					
+					this.generateObstacles(this.data);
 				}
 
                 window.Track = Track;
@@ -312,7 +309,11 @@
                 }
 				
 				function resetObstacles(data) {
-					console.log('reset obstacles');
+					for (var i = 0; i < obstacleCache.length; i++) {
+						var obstacle = obstacleCache[i];
+						obstacle.remove();
+						delete obstacle; // not sure if this does anything...
+					}
 				}
                 
                 window.Track.prototype.generateObstacles = generateObstacles;
@@ -492,11 +493,11 @@
 					};
 					
 					self.reset = function() {
-						console.log('reset car position');
 						var initialPosition = new Point(self.x + 50, self.y);
 						self.raster.position = initialPosition;
 						self.velocity = self.initialVelocity;
 						self.raster.rotate(-self.angle);
+						self.angle = 0;
 					}
 
                     return this;
@@ -690,7 +691,8 @@
 		<div id="gameWrapper">
 			<canvas id="myCanvas" width="500" height="600"></canvas>
 			<div id="gameMenu">
-				<h2><span id="winnername"></span> has survived!!!</h2>
+				<h2><span id="winnername"></span> has survived!!!<sup>this round</sup></h2>
+				
 				<ul id="gameControls" class="list-unstyled">
 					<li><a id="start" class="btn btn-primary btn-lg" href="">Start</a></li>
 					<li><a id="instructionsLink" class="btn btn-default" href="#instructions">Instructions</a></li>
@@ -708,14 +710,14 @@
 				<div id="options">
 					<h3>Options</h3>
 					<form>
-						<formset>
+						<fieldset>
 							<div class="field">
 								<label for="mute">
-									<input id="mute" type="checkbox" >
-									Awesome mode <sup><small>please don't sue us<small></sup>
+									<input id="mute" type="checkbox" />
+									Awesome mode <sup><small>please don't sue us</small></sup>
 								</label>
 							</div>
-						</formset>
+						</fieldset>
 					</form>
 					<ul class="list-unstyled">
 						<li><a class="backLink btn btn-default">Back</a></li>
