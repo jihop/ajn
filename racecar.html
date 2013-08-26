@@ -112,9 +112,10 @@
 					} else {
 						this.clock.reset();
 						this.camera.reset();
+						this.track.reset();
 						this.player1.reset();
 						this.player2.reset();
-						this.track.reset();
+						
 						this.player1.raster.bringToFront();
 						this.player2.raster.bringToFront();
 						this.camera.reset();
@@ -184,7 +185,7 @@
 					"startingTime": 1000,
 					"countdownInterval": 1000,
 					"startText": "GO!",
-					"raceTime": 3000,
+					"raceTime": 10000,
 					"raceInterval": 100,
 					"textColor": "black",
 					"endColor": "red"
@@ -275,9 +276,20 @@
                 };
 				
 				Track.prototype.reset = function() {
-					this.resetRoadLines(this.data);
+
+                    // Call remove() on all placed obstacle objects
+                    for (var x=0; x<this.data.length; x++) {
+                        var row = this.data[x];
+                        for (var y=0; y<row.length; y++) {
+                            var cell = row[y];
+                            if ((typeof cell) != "number") {
+                                cell.remove();
+                            }
+                        }
+                    }
+                    delete this.data;
 					this.data = getTrackData(this.defaults);
-					this.resetObstacles();
+					this.resetRoadLines();
 					this.generateObstacles(this.data);
 				}
 
@@ -343,8 +355,7 @@
                         fillColor: "black",
                         strokeColor: "yellow"
                     }),
-                    obstacleSymbol = new Symbol(baseObstacle),
-					obstacleCache = [];
+                    obstacleSymbol = new Symbol(baseObstacle);
 
                 var finishlineBlock = new Path.Circle({
                         center: [0, 0],
@@ -371,7 +382,9 @@
                 function generateObstacles(data) {
                     var rowHeight = 100,
                         columnWidth = 100,
-                        row;
+                        row,
+						counter = 0;
+						
                     for (var y = 0; y < data.length; y++) {
                         row = data[y];
                         for (var x = 0; x < row.length; x++) {
@@ -382,25 +395,15 @@
                                     row[x] = createFinishlineBlock(x * columnWidth, y * rowHeight);
                                     break;
                                 default: // Obstacle
-									var placedObstacle = createObstacle(x * columnWidth, y * rowHeight);
+                                    var placedObstacle = createObstacle(x * columnWidth, y * rowHeight);
                                     row[x] = placedObstacle;
-									obstacleCache.push(placedObstacle);
                                     break;
                             }
                         }
                     }
                 }
 				
-				function resetObstacles(data) {
-					for (var i = 0; i < obstacleCache.length; i++) {
-						var obstacle = obstacleCache[i];
-						obstacle.remove();
-						delete obstacle; // not sure if this does anything...
-					}
-				}
-                
                 window.Track.prototype.generateObstacles = generateObstacles;
-				window.Track.prototype.resetObstacles = resetObstacles;
             })();
             ////////// END OBSTACLES //////////
 			
