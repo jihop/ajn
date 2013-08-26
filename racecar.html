@@ -7,6 +7,77 @@
 
         <!-- Define inlined PaperScript associate it with myCanvas -->
         <script type="text/paperscript" canvas="myCanvas">
+			
+			////////// START GAME MENU //////////
+			(function() {
+				function GameControls() {
+					this.el = document.getElementById("gameControls");
+					this.muteButton = document.getElementById("mute");
+					this.bindEventHandlers();
+				}
+				
+				GameControls.prototype.show = function() {
+					this.el.style.display = "block";
+				};
+				
+				GameControls.prototype.hide = function() {
+					this.el.style.display = "none";
+				};
+				
+				GameControls.prototype.showSubMenu = function(button) {
+					var id = button.href.split("#")[1],
+						subMenu = document.getElementById(id);
+						
+					subMenu.style.display = "block";
+				};
+				
+				GameControls.prototype.hideSubMenu = function(button) {
+					var subMenu = button.parentNode.parentNode.parentNode;
+					subMenu.style.display = "none";
+				};
+				
+				GameControls.prototype.muteGame = function() {
+					if (this.muteButton.checked) {
+						game.mute(false);
+					} else {
+						game.mute(true);
+					}
+				};
+				
+				GameControls.prototype.bindEventHandlers = function(button) {
+					var self = this;
+					document.getElementById("start").onclick = function() {
+						game.initialize();
+						return false;
+					};
+					document.getElementById("instructionsLink").onclick = function() {
+						self.hide();
+						self.showSubMenu(this);
+						return false;
+					};
+					document.getElementById("optionsLink").onclick = function() {
+						self.hide();
+						self.showSubMenu(this);
+						return false;
+					};
+					var backLinks = document.getElementsByClassName("backLink");
+					for (var i = 0; i < backLinks.length; i++) {
+						backLinks[i].onclick = function() {
+							self.show();
+							self.hideSubMenu(this);
+							return false;
+						}
+					}
+					document.getElementById("end").onclick = function() {
+						// game.end(); or game.endRace();
+						return false;
+					};
+					self.muteButton.onclick = self.muteGame;
+				};
+
+				window.GameControls = GameControls;
+			})();
+			////////// END GAME MENU //////////
 		
             ////////// START GAME CONTROLLER //////////
             var config_SegmentDistancePixels = 100.0;
@@ -15,15 +86,17 @@
                 autoStartGame = false; // for quick debuggin
             
             (function() {
-                function GameController() {}
+                function GameController() {
+					this.gameControls = new GameControls();
+				}
                 
                 GameController.prototype.initialize = function() {
 					if (!this.initialized) {
 						this.initialized = true;
-						
+						this.gameControls.muteGame();
 						this.menu = document.getElementById("gameMenu");
+						this.menuTitle = document.getElementById("menuTitle");
 						this.winnerName = document.getElementById("winnername");
-						
 						
 						
 						this.clock = new Clock();
@@ -56,10 +129,14 @@
 				};
 
                 GameController.prototype.end = function(winner) {
-					winner.increaseScore();
-                    this.active = false;
+					this.active = false;
 					this.showMenu(winner);
-                }
+					winner.increaseScore();
+                };
+				
+				GameController.prototype.finalEnd = function(winner) {
+					this.showFinalMenu(winner);
+                };
 				
 				GameController.prototype.mute = function(mute) {
 					this.muted = mute;
@@ -71,9 +148,15 @@
 				GameController.prototype.hideMenu = function() {
 					this.menu.style.display = "none";
 				};
+				
 				GameController.prototype.showMenu = function(winner) {
 					this.winnerName.innerHTML = winner.name;
+					this.menuTitle.style.visibility = "visible";
 					this.menu.style.display = "block";
+				};
+				
+				GameController.prototype.showFinalMenu = function(winner) {
+					this.menuTitle.innerHTML = winner.name + " has won the whole game!!! Congrats!";
 				};
 				
                 game = new GameController();
@@ -386,13 +469,14 @@
 
             ////////// START PLAYER //////////
             (function() {
-                function Player(name, x, y, imgName, scoreEl, leftBound, rightBound) {
+                function Player(name, x, y, imgName, scoreEl, leftBound, rightBound, goal) {
                     var self = this;
 					// +50 to compensate for raster weirdness
                     var carPosition = new Point(x + 50, y),
 						initialVelocity = new Point(0,-15);
 					
 					self.name = name;
+					self.goal = goal;
 					self.x = x;
 					self.y = y;
                     self.leftBound = leftBound;
@@ -489,6 +573,9 @@
                     };
 					self.increaseScore = function() {
 						self.score++;
+						if (self.score === self.goal) {
+							game.finalEnd(self);
+						}
 						self.scoreEl.innerHTML = self.score; 
 					};
 					
@@ -561,67 +648,6 @@
                         game.player2.moveCenter();
                     }
              }
-
-            
-			
-			////////// START GAME MENU //////////
-			(function() {
-				var gameControls = document.getElementById("gameControls");
-				
-				document.getElementById("start").onclick = function() {
-					game.initialize();
-					return false;
-				};
-				document.getElementById("instructionsLink").onclick = function() {
-					hideGameControls();
-					showSubMenu(this);
-					return false;
-				};
-				document.getElementById("optionsLink").onclick = function() {
-					hideGameControls();
-					showSubMenu(this);
-					return false;
-				};
-				var backLinks = document.getElementsByClassName("backLink");
-				for (var i = 0; i < backLinks.length; i++) {
-					backLinks[i].onclick = function() {
-						showGameControls();
-						hideSubMenu(this);
-						return false;
-					}
-				}
-				function showGameControls() {
-					gameControls.style.display = "block";
-				}
-				function hideGameControls() {
-					gameControls.style.display = "none";
-				}
-				function showSubMenu(button) {
-					var id = button.href.split("#")[1],
-						subMenu = document.getElementById(id);
-						
-					subMenu.style.display = "block";
-				}
-				function hideSubMenu(button) {
-					var subMenu = button.parentNode.parentNode.parentNode;
-					subMenu.style.display = "none";
-				}
-				document.getElementById("end").onclick = function() {
-					// game.end(); or game.endRace();
-					return false;
-				};
-				var muteButton = document.getElementById("mute");
-				muteButton.onclick = muteGame;
-				muteGame();
-				function muteGame() {
-					if (muteButton.checked) {
-						game.mute(false);
-					} else {
-						game.mute(true);
-					}
-				}
-			})();
-			////////// END GAME MENU //////////
 			
             if (autoStartGame) {
                 game.initialize();
@@ -654,7 +680,7 @@
 				position: absolute;
 				top: 0;
 				left: 0;
-				padding: 100px;
+				padding: 100px 50px;
 			}
 			#gameMenu li {
 				margin-bottom: 20px;
@@ -691,7 +717,7 @@
 		<div id="gameWrapper">
 			<canvas id="myCanvas" width="500" height="600"></canvas>
 			<div id="gameMenu">
-				<h2><span id="winnername"></span> has survived!!!<sup>this round</sup></h2>
+				<h2 id="menuTitle"><span id="winnername"></span> has survived!!! <small>this round</small></h2>
 				
 				<ul id="gameControls" class="list-unstyled">
 					<li><a id="start" class="btn btn-primary btn-lg" href="">Start</a></li>
