@@ -112,9 +112,10 @@
 					} else {
 						this.clock.reset();
 						this.camera.reset();
+						this.track.reset();
 						this.player1.reset();
 						this.player2.reset();
-						this.track.reset();
+						
 						this.player1.raster.bringToFront();
 						this.player2.raster.bringToFront();
 						this.camera.reset();
@@ -253,7 +254,7 @@
                 
                 Track.prototype.defaults = {
                     "NumberOfLanes" : 10,
-                    "NumberOfSegments" : 100,
+                    "NumberOfSegments" : 30,
                     "NumberOfInitialOpenSegments" : 5,
                     "ObstacleFrequency" : 0.1
                 };
@@ -266,8 +267,8 @@
                 Track.prototype.popObstacle = function(segmentIndex, laneIndex) {
                     if (this.data[segmentIndex] && this.data[segmentIndex][laneIndex]) {
                         var tmpObstacle = this.data[segmentIndex][laneIndex];
-                        this.data[segmentIndex][laneIndex].remove();
-                        this.data[segmentIndex][laneIndex] = 0;
+                        //this.data[segmentIndex][laneIndex].remove();
+                        //this.data[segmentIndex][laneIndex] = 0;
                         return tmpObstacle;
                     } else {
                         return false;
@@ -275,9 +276,8 @@
                 };
 				
 				Track.prototype.reset = function() {
-					this.resetRoadLines(this.data);
 					this.data = getTrackData(this.defaults);
-					this.resetObstacles();
+					this.resetRoadLines();
 					this.generateObstacles(this.data);
 				}
 
@@ -371,7 +371,9 @@
                 function generateObstacles(data) {
                     var rowHeight = 100,
                         columnWidth = 100,
-                        row;
+                        row,
+						counter = 0;
+						
                     for (var y = 0; y < data.length; y++) {
                         row = data[y];
                         for (var x = 0; x < row.length; x++) {
@@ -382,9 +384,17 @@
                                     row[x] = createFinishlineBlock(x * columnWidth, y * rowHeight);
                                     break;
                                 default: // Obstacle
-									var placedObstacle = createObstacle(x * columnWidth, y * rowHeight);
-                                    row[x] = placedObstacle;
-									obstacleCache.push(placedObstacle);
+									var obstacle = obstacleCache[counter];
+									counter++;
+									if (obstacle) {
+										obstacle.position.x = x * columnWidth;
+										obstacle.position.y = y * rowHeight;
+										row[x] = obstacle;
+									} else {
+										var placedObstacle = createObstacle(x * columnWidth, y * rowHeight);
+										row[x] = placedObstacle;
+										obstacleCache.push(placedObstacle);
+									}
                                     break;
                             }
                         }
@@ -392,15 +402,41 @@
                 }
 				
 				function resetObstacles(data) {
-					for (var i = 0; i < obstacleCache.length; i++) {
-						var obstacle = obstacleCache[i];
-						obstacle.remove();
-						delete obstacle; // not sure if this does anything...
-					}
+					console.log('reset obstacles');
+					var rowHeight = 100,
+                        columnWidth = 100,
+                        row,
+						counter = 0;
+					console.log(data);
+					console.log(y);
+                    for (var y = 0; y < data.length; y++) {
+                        row = data[y];
+                        for (var x = 0; x < row.length; x++) {
+                            switch (row[x]) {
+                                case 0: // No Obstacle
+                                    break;
+                                case -1:
+                                    //row[x] = createFinishlineBlock(x * columnWidth, y * rowHeight);
+                                    break;
+                                default: // Obstacle
+									var obstacle = obstacleCache[counter];
+									counter++;
+									if (obstacle) {
+										obstacle.position.x = x * columnWidth;
+										obstacle.position.y = y * rowHeight;
+										row[x] = obstacle;
+									} else {
+										var placedObstacle = createObstacle(x * columnWidth, y * rowHeight);
+										row[x] = placedObstacle;
+										obstacleCache.push(placedObstacle);
+									}
+                                    break;
+                            }
+                        }
+                    }
 				}
                 
                 window.Track.prototype.generateObstacles = generateObstacles;
-				window.Track.prototype.resetObstacles = resetObstacles;
             })();
             ////////// END OBSTACLES //////////
 			
