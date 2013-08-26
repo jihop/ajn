@@ -96,10 +96,10 @@
 				};
 				
 				Clock.prototype.defaults = {
-					"startingTime": 3000,
+					"startingTime": 1000,
 					"countdownInterval": 1000,
 					"startText": "GO!",
-					"raceTime": 10000,
+					"raceTime": 3000,
 					"raceInterval": 100,
 					"textColor": "black",
 					"endColor": "red"
@@ -168,7 +168,7 @@
                 
                 Track.prototype.defaults = {
                     "NumberOfLanes" : 10,
-                    "NumberOfSegments" : 100,
+                    "NumberOfSegments" : 20,
                     "NumberOfInitialOpenSegments" : 5,
                     "ObstacleFrequency" : 0.1
                 };
@@ -194,10 +194,6 @@
 					this.data = getTrackData(this.defaults);
 					this.resetObstacles();
 					this.generateObstacles(this.data);
-				}
-				
-				Track.prototype.destroyView = function() {
-					
 				}
 
                 window.Track = Track;
@@ -312,7 +308,9 @@
 				
 				function resetObstacles(data) {
 					for (var i = 0; i < obstacleCache.length; i++) {
-						var obstacle = obstacleCache[i].remove();
+						var obstacle = obstacleCache[i];
+						obstacle.remove();
+						delete obstacle; // not sure if this does anything...
 					}
 				}
                 
@@ -473,6 +471,7 @@
 						self.raster.position = initialPosition;
 						self.velocity = self.initialVelocity;
 						self.raster.rotate(-self.angle);
+						self.angle = 0;
 					}
 
                     return this;
@@ -666,7 +665,8 @@
 		<div id="gameWrapper">
 			<canvas id="myCanvas" width="500" height="600"></canvas>
 			<div id="gameMenu">
-				<h2><span id="winnername"></span> has survived!!!</h2>
+				<h2><span id="winnername"></span> has survived!!!<sup>this round</sup></h2>
+				
 				<ul id="gameControls" class="list-unstyled">
 					<li><a id="start" class="btn btn-primary btn-lg" href="">Start</a></li>
 					<li><a id="instructionsLink" class="btn btn-default" href="#instructions">Instructions</a></li>
