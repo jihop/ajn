@@ -409,6 +409,8 @@
                     self.turningVector = 0;
 					self.angle = 0;
                     self.maxTurningVector = 10;
+                    // reference vector for angle calculation
+                    self.refPoint = new Point(0,-1);
 
                     this.moveForward = function(tickDuration, player) {
                         if(!tickDuration) {
@@ -418,23 +420,28 @@
                             self.bounce();
                         }
 
+                        var newAngle = self.velocity.getDirectedAngle(self.refPoint);
+                        self.raster.rotate(-self.angle);
+                        self.raster.rotate(-newAngle);
+                        self.angle = -newAngle;
                         //adjust towards the turning vector each frame by 1/10 of the vector
                         if(self.turningVector !== 0) {
-                            if(Math.abs(self.velocity.x) < self.maxTurningVector) {
-                                self.velocity.x += self.turningVector / 10;
-                                self.raster.rotate(self.turningVector / 5);
-								self.angle += self.turningVector / 5;
+                            if(Math.abs(self.velocity.x) <= self.maxTurningVector && 
+                               self.velocity.x !== self.turningVector) {
+                                if(self.velocity.x !== self.turningVector) {
+                                    self.velocity.x += self.turningVector / 10;
+                                }
                             }
                         } else {
                             //return to center
                             if (self.velocity.x < 0) {
                                 self.velocity.x += self.maxTurningVector / 10;
-                                self.raster.rotate(self.maxTurningVector / 5);
-								self.angle += self.maxTurningVector / 5;
+                                //self.raster.rotate(self.maxTurningVector / 5);
+								//self.angle += self.maxTurningVector / 5;
                             } else if (self.velocity.x > 0) {
                                 self.velocity.x -= self.maxTurningVector / 10;
-                                self.raster.rotate(-self.maxTurningVector / 5);
-								self.angle -= self.maxTurningVector / 5;
+                                //self.raster.rotate(-self.maxTurningVector / 5);
+								//self.angle -= self.maxTurningVector / 5;
                             }
                         }
                         // rotate raster to current velocity
@@ -462,8 +469,16 @@
                         }
                     };
                     self.bounce = function() {
-                        self.velocity.x = -self.velocity.x;
-                        self.raster.rotate(self.velocity.x * 2);
+                        if (!self.debounce) {
+                            self.velocity.x = -self.velocity.x;
+                            if(self.raster.position.x > self.rightBound) {
+                                self.raster.position.x = self.rightBound;
+                            } else if(self.raster.position.x < self.leftBound) {
+                                self.raster.position.x = self.leftBound;
+                            }
+                            self.debounce = true;
+                            setTimeout(function(){self.debounce = false;},50);
+                        }
                     };
                     self.currentSegmentIndex = function () {
                         return Math.round(self.currentDistance / config_SegmentDistancePixels);
