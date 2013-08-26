@@ -102,8 +102,9 @@
 						this.clock = new Clock();
                         this.worldLeftBound = 0;
                         this.worldRightBound = 1000;
-						this.player1 = new Player("Player 1", 200, 0, "redcar", document.getElementById("score1"), this.worldLeftBound, this.worldRightBound);
-						this.player2 = new Player("Player 2", 300, 0, "yellowcar", document.getElementById("score2"), this.worldLeftBound, this.worldRightBound);
+						this.numberOfRaces = 10;
+						this.player1 = new Player("Player 1", 200, 0, "redcar", document.getElementById("score1"), this.worldLeftBound, this.worldRightBound, this.numberOfRaces);
+						this.player2 = new Player("Player 2", 300, 0, "yellowcar", document.getElementById("score2"), this.worldLeftBound, this.worldRightBound, this.numberOfRaces);
 						this.track = new Track();
 						this.player1.raster.bringToFront();
 						this.player2.raster.bringToFront();
@@ -158,6 +159,8 @@
 				
 				GameController.prototype.showFinalMenu = function(winner) {
 					this.menuTitle.innerHTML = winner.name + " has won the whole game!!! Congrats!";
+					this.player1.resetScore();
+					this.player2.resetScore();
 				};
 				
                 game = new GameController();
@@ -182,7 +185,7 @@
 				};
 				
 				Clock.prototype.defaults = {
-					"startingTime": 1000,
+					"startingTime": 3000,
 					"countdownInterval": 1000,
 					"startText": "GO!",
 					"raceTime": 10000,
@@ -579,7 +582,7 @@
 						if (self.score === self.goal) {
 							game.finalEnd(self);
 						}
-						self.scoreEl.innerHTML = self.score; 
+						self.setScore();
 					};
 					
 					self.reset = function() {
@@ -589,6 +592,15 @@
 						self.raster.rotate(-self.angle);
 						self.angle = 0;
 					}
+					
+					self.resetScore = function() {
+						self.score = 0;
+						self.setScore();
+					}
+					self.setScore = function() {
+						self.scoreEl.innerHTML = self.score;
+					}
+					self.setScore();
 
                     return this;
                 }
