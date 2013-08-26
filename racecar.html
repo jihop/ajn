@@ -102,8 +102,8 @@
 						this.clock = new Clock();
                         this.worldLeftBound = 0;
                         this.worldRightBound = 1000;
-						this.player1 = new Player("Player 1", 300, 0, "redcar", document.getElementById("score1"), this.worldLeftBound, this.worldRightBound, 10);
-						this.player2 = new Player("Player 2", 200, 0, "yellowcar", document.getElementById("score2"), this.worldLeftBound, this.worldRightBound, 10);
+						this.player1 = new Player("Player 1", 200, 0, "redcar", document.getElementById("score1"), this.worldLeftBound, this.worldRightBound, 10);
+						this.player2 = new Player("Player 2", 300, 0, "yellowcar", document.getElementById("score2"), this.worldLeftBound, this.worldRightBound, 10);
 						this.track = new Track();
 						this.player1.raster.bringToFront();
 						this.player2.raster.bringToFront();
@@ -185,7 +185,7 @@
 					"startingTime": 1000,
 					"countdownInterval": 1000,
 					"startText": "GO!",
-					"raceTime": 3000,
+					"raceTime": 10000,
 					"raceInterval": 100,
 					"textColor": "black",
 					"endColor": "red"
@@ -254,7 +254,7 @@
                 
                 Track.prototype.defaults = {
                     "NumberOfLanes" : 10,
-                    "NumberOfSegments" : 30,
+                    "NumberOfSegments" : 100,
                     "NumberOfInitialOpenSegments" : 5,
                     "ObstacleFrequency" : 0.1
                 };
@@ -267,8 +267,8 @@
                 Track.prototype.popObstacle = function(segmentIndex, laneIndex) {
                     if (this.data[segmentIndex] && this.data[segmentIndex][laneIndex]) {
                         var tmpObstacle = this.data[segmentIndex][laneIndex];
-                        //this.data[segmentIndex][laneIndex].remove();
-                        //this.data[segmentIndex][laneIndex] = 0;
+                        this.data[segmentIndex][laneIndex].remove();
+                        this.data[segmentIndex][laneIndex] = 0;
                         return tmpObstacle;
                     } else {
                         return false;
@@ -276,6 +276,18 @@
                 };
 				
 				Track.prototype.reset = function() {
+
+                    // Call remove() on all placed obstacle objects
+                    for (var x=0; x<this.data.length; x++) {
+                        var row = this.data[x];
+                        for (var y=0; y<row.length; y++) {
+                            var cell = row[y];
+                            if ((typeof cell) != "number") {
+                                cell.remove();
+                            }
+                        }
+                    }
+                    delete this.data;
 					this.data = getTrackData(this.defaults);
 					this.resetRoadLines();
 					this.generateObstacles(this.data);
@@ -343,8 +355,7 @@
                         fillColor: "black",
                         strokeColor: "yellow"
                     }),
-                    obstacleSymbol = new Symbol(baseObstacle),
-					obstacleCache = [];
+                    obstacleSymbol = new Symbol(baseObstacle);
 
                 var finishlineBlock = new Path.Circle({
                         center: [0, 0],
@@ -384,58 +395,14 @@
                                     row[x] = createFinishlineBlock(x * columnWidth, y * rowHeight);
                                     break;
                                 default: // Obstacle
-									var obstacle = obstacleCache[counter];
-									counter++;
-									if (obstacle) {
-										obstacle.position.x = x * columnWidth;
-										obstacle.position.y = y * rowHeight;
-										row[x] = obstacle;
-									} else {
-										var placedObstacle = createObstacle(x * columnWidth, y * rowHeight);
-										row[x] = placedObstacle;
-										obstacleCache.push(placedObstacle);
-									}
+                                    var placedObstacle = createObstacle(x * columnWidth, y * rowHeight);
+                                    row[x] = placedObstacle;
                                     break;
                             }
                         }
                     }
                 }
 				
-				function resetObstacles(data) {
-					console.log('reset obstacles');
-					var rowHeight = 100,
-                        columnWidth = 100,
-                        row,
-						counter = 0;
-					console.log(data);
-					console.log(y);
-                    for (var y = 0; y < data.length; y++) {
-                        row = data[y];
-                        for (var x = 0; x < row.length; x++) {
-                            switch (row[x]) {
-                                case 0: // No Obstacle
-                                    break;
-                                case -1:
-                                    //row[x] = createFinishlineBlock(x * columnWidth, y * rowHeight);
-                                    break;
-                                default: // Obstacle
-									var obstacle = obstacleCache[counter];
-									counter++;
-									if (obstacle) {
-										obstacle.position.x = x * columnWidth;
-										obstacle.position.y = y * rowHeight;
-										row[x] = obstacle;
-									} else {
-										var placedObstacle = createObstacle(x * columnWidth, y * rowHeight);
-										row[x] = placedObstacle;
-										obstacleCache.push(placedObstacle);
-									}
-                                    break;
-                            }
-                        }
-                    }
-				}
-                
                 window.Track.prototype.generateObstacles = generateObstacles;
             })();
             ////////// END OBSTACLES //////////
