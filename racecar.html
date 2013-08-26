@@ -27,22 +27,25 @@
 						
 						
 						this.clock = new Clock();
-						this.player1 = new Player("Player 1", 300, 0, "redcar", document.getElementById("score1"));
-						this.player2 = new Player("Player 2", 200, 0, "yellowcar", document.getElementById("score2"));
+                        this.worldLeftBound = 0;
+                        this.worldRightBound = 1000;
+						this.player1 = new Player("Player 1", 300, 0, "redcar", document.getElementById("score1"), this.worldLeftBound, this.worldRightBound);
+						this.player2 = new Player("Player 2", 200, 0, "yellowcar", document.getElementById("score2"), this.worldLeftBound, this.worldRightBound);
 						this.track = new Track();
 						this.player1.raster.bringToFront();
 						this.player2.raster.bringToFront();
-						// Horizontal adjustment needed for the camera of about 500, because rasters are weird
-						// and don't report position or rect correctly
-						this.camera = new Camera(this.track.baseRaster.position, this.track.baseRaster.bounds, 500);
+						this.camera = new Camera(this.track.baseRaster.position, this.track.baseRaster.bounds);
+						this.camera.reposition(this.player1, this.player2);
 					} else {
 						this.clock.reset();
+						this.camera.reset();
 						this.player1.reset();
 						this.player2.reset();
 						this.track.reset();
 						this.player1.raster.bringToFront();
 						this.player2.raster.bringToFront();
-						//this.camera.reset();
+						this.camera.reset();
+						this.camera.reposition(this.player1, this.player2);
 					}
 					this.hideMenu();
                 };
@@ -95,10 +98,10 @@
 				};
 				
 				Clock.prototype.defaults = {
-					"startingTime": 3000,
+					"startingTime": 1000,
 					"countdownInterval": 1000,
 					"startText": "GO!",
-					"raceTime": 10000,
+					"raceTime": 3000,
 					"raceInterval": 100,
 					"textColor": "black",
 					"endColor": "red"
@@ -167,7 +170,7 @@
                 
                 Track.prototype.defaults = {
                     "NumberOfLanes" : 10,
-                    "NumberOfSegments" : 100,
+                    "NumberOfSegments" : 20,
                     "NumberOfInitialOpenSegments" : 5,
                     "ObstacleFrequency" : 0.1
                 };
@@ -189,13 +192,10 @@
                 };
 				
 				Track.prototype.reset = function() {
+					this.resetRoadLines(this.data);
 					this.data = getTrackData(this.defaults);
-					this.resetRoadLines();
-					//this.resetObstacles();
-				}
-				
-				Track.prototype.destroyView = function() {
-					
+					this.resetObstacles();
+					this.generateObstacles(this.data);
 				}
 
                 window.Track = Track;
@@ -211,7 +211,8 @@
                     // first road line is at bottom of view
                     baseRoadLinePosition = new Point(500, view.bounds.height - roadRasterHeight / 2),
                     baseRoadLine = new Raster("roadLine", baseRoadLinePosition),
-                    roadLineSymbol = new Symbol(baseRoadLine);
+                    roadLineSymbol = new Symbol(baseRoadLine),
+					roadLinesCache = [];
                 
                 function checkRoadLine(item) {
                     if (view.bounds.y + view.bounds.height < item.bounds.y) {
@@ -227,19 +228,22 @@
                     placedRoadLine.onFrame = function(e) {
                         checkRoadLine(this);
                     }
+					roadLinesCache.push(placedRoadLine);
                 }
                 
                 function generateRoadLines() {
                     for (var i = 0; i < numberOfRoadRasters; i++) {
                         createRoadLine(i);
                     }
-                    return baseRoadLine;
+                    return roadLinesCache[0];
                 }
 				
 				function resetRoadLines() {
-                    console.log('reset road lines');
-					console.log(roadLineSymbol);
-					
+					for (var i = 0; i < roadLinesCache.length; i++) {
+						var point = new Point(baseRoadLinePosition);
+						point.y -= roadRasterHeight * i;
+						roadLinesCache[i].position = point;
+					}
                 }
                 
                 window.Track.prototype.generateRoadLines = generateRoadLines;
@@ -256,7 +260,8 @@
                         fillColor: "black",
                         strokeColor: "yellow"
                     }),
-                    obstacleSymbol = new Symbol(baseObstacle);
+                    obstacleSymbol = new Symbol(baseObstacle),
+					obstacleCache = [];
 
                 var finishlineBlock = new Path.Circle({
                         center: [0, 0],
@@ -294,14 +299,25 @@
                                     row[x] = createFinishlineBlock(x * columnWidth, y * rowHeight);
                                     break;
                                 default: // Obstacle
-                                    row[x] = createObstacle(x * columnWidth, y * rowHeight);
+									var placedObstacle = createObstacle(x * columnWidth, y * rowHeight);
+                                    row[x] = placedObstacle;
+									obstacleCache.push(placedObstacle);
                                     break;
                             }
                         }
                     }
                 }
+				
+				function resetObstacles(data) {
+					for (var i = 0; i < obstacleCache.length; i++) {
+						var obstacle = obstacleCache[i];
+						obstacle.remove();
+						delete obstacle; // not sure if this does anything...
+					}
+				}
                 
                 window.Track.prototype.generateObstacles = generateObstacles;
+				window.Track.prototype.resetObstacles = resetObstacles;
             })();
             ////////// END OBSTACLES //////////
 			
@@ -309,13 +325,13 @@
             ////////// START CAMERA //////////
             // Singleton
             (function() {
-                function Camera(position, bounds, horizontalAdjustment) {
+                function Camera(position, bounds) {
                     this.zoomInBlocked = false;
                     this.zoomOutBlocked = false;
                     this.bottomPadding = 200;
                     this.sidePadding = 200;
                 
-                    this.repositionCamera = function(player1, player2) {
+                    this.reposition = function(player1, player2) {
                         var avg = (player1.raster.position/2 + player2.raster.position/2);
                         avg.y -= view.bounds.height / 4;
                         avg.x = this.fixedX;
@@ -331,12 +347,16 @@
                         if (!this.zoomInBlocked && view.zoom <= this.minZoom && intersects) {
                             zoomIn();
                         }
-                    }
+                    };
+					
+					this.reset = function() {
+						view.center = new Point(0, 0);
+					};
                     
                     this.unblockZoom = function() {
                         this.zoomInBlocked = false;
                         this.zoomOutBlocked = false;
-                    }
+                    };
                     
                     function zoomOut() {                                    
                         view.zoom -= .01;
@@ -349,16 +369,14 @@
                     }
 
                     // init camera
-                    view.center = position;
+                    view.center = new Point(position);
                     while(!view.bounds.contains(bounds)) {
                         zoomOut();
-		            }
-		            view.center.x += horizontalAdjustment;
+					}
 
                     this.unblockZoom();
                     this.minZoom = view.zoom;
                     this.fixedX = view.center.x;
-                    
                     
                     return this;
                 }
@@ -368,7 +386,7 @@
 
             ////////// START PLAYER //////////
             (function() {
-                function Player(name, x, y, imgName, scoreEl) {
+                function Player(name, x, y, imgName, scoreEl, leftBound, rightBound) {
                     var self = this;
 					// +50 to compensate for raster weirdness
                     var carPosition = new Point(x + 50, y),
@@ -377,6 +395,8 @@
 					self.name = name;
 					self.x = x;
 					self.y = y;
+                    self.leftBound = leftBound;
+                    self.rightBound = rightBound;
 					self.initialVelocity = initialVelocity;
 
                     self.raster = new Raster(imgName, carPosition);
@@ -388,27 +408,41 @@
                     self.velocity = new Point(self.initialVelocity);
                     self.spacesMovedX = 0;
                     self.turningVector = 0;
+					self.angle = 0;
                     self.maxTurningVector = 10;
+                    // reference vector for angle calculation
+                    self.refPoint = new Point(0,-1);
 
                     this.moveForward = function(tickDuration, player) {
                         if(!tickDuration) {
                             var tickDuration = 18;
                         }
+                        if(self.raster.position.x >= self.rightBound || self.raster.position.x <= self.leftBound) {
+                            self.bounce();
+                        }
 
+                        var newAngle = self.velocity.getDirectedAngle(self.refPoint);
+                        self.raster.rotate(-self.angle);
+                        self.raster.rotate(-newAngle);
+                        self.angle = -newAngle;
                         //adjust towards the turning vector each frame by 1/10 of the vector
                         if(self.turningVector !== 0) {
-                            if(Math.abs(self.velocity.x) < self.maxTurningVector) {
-                                self.velocity.x += self.turningVector / 10;
-                                self.raster.rotate(self.turningVector / 5);
+                            if(Math.abs(self.velocity.x) <= self.maxTurningVector && 
+                               self.velocity.x !== self.turningVector) {
+                                if(self.velocity.x !== self.turningVector) {
+                                    self.velocity.x += self.turningVector / 10;
+                                }
                             }
                         } else {
                             //return to center
                             if (self.velocity.x < 0) {
                                 self.velocity.x += self.maxTurningVector / 10;
-                                self.raster.rotate(self.maxTurningVector / 5);
+                                //self.raster.rotate(self.maxTurningVector / 5);
+								//self.angle += self.maxTurningVector / 5;
                             } else if (self.velocity.x > 0) {
                                 self.velocity.x -= self.maxTurningVector / 10;
-                                self.raster.rotate(-self.maxTurningVector / 5);
+                                //self.raster.rotate(-self.maxTurningVector / 5);
+								//self.angle -= self.maxTurningVector / 5;
                             }
                         }
                         // rotate raster to current velocity
@@ -418,13 +452,13 @@
                         self.currentDistance = self.y - self.raster.position.y;
                     };
                     self.moveLeft = function() {
-                        self.turningVector = -10; 
+                        self.turningVector = -10;
                     };
                     self.moveRight = function() {
-                        self.turningVector = 10; 
+                        self.turningVector = 10;
                     };
                     self.moveCenter = function() {
-                        self.turningVector = 0; 
+                        self.turningVector = 0;
                     };
                     self.collideWith = function(obstacle) {
                         if (obstacle) {
@@ -433,6 +467,18 @@
                             setTimeout(function() {
                                 self.velocity -= collisionVelocity // Restore to normal velocity
                             },200);
+                        }
+                    };
+                    self.bounce = function() {
+                        if (!self.debounce) {
+                            self.velocity.x = -self.velocity.x;
+                            if(self.raster.position.x > self.rightBound) {
+                                self.raster.position.x = self.rightBound;
+                            } else if(self.raster.position.x < self.leftBound) {
+                                self.raster.position.x = self.leftBound;
+                            }
+                            self.debounce = true;
+                            setTimeout(function(){self.debounce = false;},50);
                         }
                     };
                     self.currentSegmentIndex = function () {
@@ -447,10 +493,11 @@
 					};
 					
 					self.reset = function() {
-						console.log('reset car position');
 						var initialPosition = new Point(self.x + 50, self.y);
 						self.raster.position = initialPosition;
 						self.velocity = self.initialVelocity;
+						self.raster.rotate(-self.angle);
+						self.angle = 0;
 					}
 
                     return this;
@@ -479,19 +526,17 @@
 
                     //console.log(game.track.data.length);
                     if (player1SegmentIndex == game.track.data.length - 10) {
-                        alert("Player 1.. LOST!");
                         game.end(game.player2);
                     }
 
                     if (player2SegmentIndex == game.track.data.length - 10) {
-                        alert("Player 2.. LOST!");
                         game.end(game.player1);
                     }
 
                     game.player1.collideWith(game.track.popObstacle(game.player1.currentSegmentIndex(), game.player1.currentLaneIndex()));
                     game.player2.collideWith(game.track.popObstacle(game.player2.currentSegmentIndex(), game.player2.currentLaneIndex()));
 
-                    game.camera.repositionCamera(game.player1, game.player2);
+                    game.camera.reposition(game.player1, game.player2);
                 }
             }
             
@@ -646,7 +691,8 @@
 		<div id="gameWrapper">
 			<canvas id="myCanvas" width="500" height="600"></canvas>
 			<div id="gameMenu">
-				<h2><span id="winnername"></span> has survived!!!</h2>
+				<h2><span id="winnername"></span> has survived!!!<sup>this round</sup></h2>
+				
 				<ul id="gameControls" class="list-unstyled">
 					<li><a id="start" class="btn btn-primary btn-lg" href="">Start</a></li>
 					<li><a id="instructionsLink" class="btn btn-default" href="#instructions">Instructions</a></li>
@@ -664,14 +710,14 @@
 				<div id="options">
 					<h3>Options</h3>
 					<form>
-						<formset>
+						<fieldset>
 							<div class="field">
 								<label for="mute">
-									<input id="mute" type="checkbox" >
-									Awesome mode <sup><small>please don't sue us<small></sup>
+									<input id="mute" type="checkbox" />
+									Awesome mode <sup><small>please don't sue us</small></sup>
 								</label>
 							</div>
-						</formset>
+						</fieldset>
 					</form>
 					<ul class="list-unstyled">
 						<li><a class="backLink btn btn-default">Back</a></li>
